@@ -21,7 +21,11 @@ import {
   PHASE_ORDER, PHASE_LABELS, PHASE_DESCRIPTIONS, PHASE_ITEM_COUNTS, PHASE_SECTIONS,
 } from '@/lib/phases'
 import { getSubLocations, getClientContactsForLocation } from '@/lib/supabase/queries'
-import { bulkCreateTemplateFromPreset, startOnboardingForTemplateAction } from '@/app/admin/actions/workflow'
+import {
+  bulkCreateTemplateFromPreset, startOnboardingForTemplateAction,
+  getCustomPresetsAction, saveCustomPresetAction, deleteCustomPresetAction,
+} from '@/app/admin/actions/workflow'
+import type { CustomPresetRow } from '@/app/admin/actions/workflow'
 import { Alert } from '@/components/ui/alert'
 import type { ConfigPhase, ContactRoleLabel, ClientContact } from '@/types'
 
@@ -77,23 +81,7 @@ interface TemplatePreset {
   deployTasks: { taskKey: string; title: string; description: string }[]
 }
 
-// ── Custom preset storage ──────────────────────────────────────
-
-interface StoredCustomPreset {
-  key:          string
-  name:         string
-  description:  string
-  sectionSlugs: string[]
-  createdAt:    string
-}
-
-const CUSTOM_PRESETS_KEY = 'ai_builder_custom_presets'
-
-function loadCustomPresetsFromStorage(): StoredCustomPreset[] {
-  if (typeof window === 'undefined') return []
-  try { return JSON.parse(localStorage.getItem(CUSTOM_PRESETS_KEY) ?? '[]') }
-  catch { return [] }
-}
+// CustomPresetRow is imported from the server action (DB-backed)
 
 // ── Section definitions ────────────────────────────────────────
 // visibleInPhases is derived from PHASE_SECTIONS (single source of truth in lib/phases.ts)
@@ -297,13 +285,13 @@ const PRESETS: TemplatePreset[] = [
   },
 ]
 
-function customToPreset(cp: StoredCustomPreset): TemplatePreset {
+function customToPreset(cp: CustomPresetRow): TemplatePreset {
   const sections = cp.sectionSlugs.map(slug => S[slug]).filter(Boolean)
   return {
-    key:         cp.key,
+    key:         cp.id,
     name:        cp.name,
     tagline:     `Custom · ${sections.length} sections`,
-    description: cp.description,
+    description: cp.description ?? '',
     icon:        <Blocks size={16} />,
     colors:      COLORS.custom,
     sections,
@@ -559,11 +547,13 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
   const [createdName,     setCreatedName]     = useState('')
   const [createdConfigId, setCreatedConfigId] = useState<string | null>(null)
 
-  // Custom presets
-  const [customPresets,   setCustomPresets]   = useState<StoredCustomPreset[]>(() => loadCustomPresetsFromStorage())
-  const [saveCustomName,  setSaveCustomName]  = useState('')
-  const [showSaveCustom,  setShowSaveCustom]  = useState(false)
-  const [customSaved,     setCustomSaved]     = useState(false)
+  // Custom presets (DB-backed)
+  const [customPresets,    setCustomPresets]    = useState<CustomPresetRow[]>([])
+  const [presetsLoaded,    setPresetsLoaded]    = useState(false)
+  const [saveCustomName,   setSaveCustomName]   = useState('')
+  const [showSaveCustom,   setShowSaveCustom]   = useState(false)
+  const [customSaved,      setCustomSaved]      = useState(false)
+  const [savingCustom,     setSavingCustom]     = useState(false)
 
   // Fallback to violet before a preset is selected
   const c: PresetColors = preset?.colors ?? COLORS.enterprise
@@ -580,6 +570,13 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
       setContactFetchDone(true)
     })
   }, [locationId, contactRole])
+
+  useEffect(() => {
+    getCustomPresetsAction().then(r => {
+      if (r.ok) setCustomPresets(r.presets)
+      setPresetsLoaded(true)
+    })
+  }, [])
 
   useEffect(() => {
     if (step === 4 && preset) {
@@ -653,26 +650,22 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
     }
   }
 
-  function handleSaveCustomPreset() {
+  async function handleSaveCustomPreset() {
     if (!preset || !saveCustomName.trim() || selectedSections.length === 0) return
-    const stored: StoredCustomPreset = {
-      key:          'custom_' + Date.now(),
-      name:         saveCustomName.trim(),
-      description:  `Custom preset with ${selectedSections.length} section${selectedSections.length !== 1 ? 's' : ''}`,
-      sectionSlugs: selectedSections.map(s => s.slug),
-      createdAt:    new Date().toISOString(),
+    setSavingCustom(true)
+    const desc = `Custom preset with ${selectedSections.length} section${selectedSections.length !== 1 ? 's' : ''}`
+    const r = await saveCustomPresetAction(saveCustomName.trim(), desc, selectedSections.map(s => s.slug))
+    setSavingCustom(false)
+    if (r.ok) {
+      setCustomPresets(prev => [...prev, r.preset])
+      setCustomSaved(true)
+      setTimeout(() => setCustomSaved(false), 2500)
     }
-    const updated = [...customPresets, stored]
-    setCustomPresets(updated)
-    localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updated))
-    setCustomSaved(true)
-    setTimeout(() => setCustomSaved(false), 2500)
   }
 
-  function deleteCustomPreset(key: string) {
-    const updated = customPresets.filter(p => p.key !== key)
-    setCustomPresets(updated)
-    localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updated))
+  async function deleteCustomPreset(id: string) {
+    setCustomPresets(prev => prev.filter(p => p.id !== id))
+    await deleteCustomPresetAction(id)
   }
 
   const isModified = !!preset && (() => {
@@ -807,14 +800,14 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
 
       <div className="flex flex-col gap-1.5">
 
-        {customPresets.length > 0 && (
+        {presetsLoaded && customPresets.length > 0 && (
           <>
             <p className="text-sm font-semibold text-heading  mb-0.5">Your presets</p>
             {customPresets.map(cp => {
               const p  = customToPreset(cp)
               const pc = p.colors
               return (
-                <div key={cp.key} className="relative group/card">
+                <div key={cp.id} className="relative group/card">
                   <button
                     type="button"
                     onClick={() => { setPreset(p); setSelectedSections([...p.sections]); setStep(1) }}
@@ -841,7 +834,7 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
                   </button>
                   <button
                     type="button"
-                    onClick={() => deleteCustomPreset(cp.key)}
+                    onClick={() => deleteCustomPreset(cp.id)}
                     className="absolute top-1/2 right-3 -translate-y-1/2 opacity-0 group-hover/card:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-red-500/10 text-muted hover:text-red-400"
                     title="Delete custom preset"
                   >
@@ -1368,17 +1361,17 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
               <button
                 type="button"
                 onClick={handleSaveCustomPreset}
-                disabled={!saveCustomName.trim() || customSaved}
+                disabled={!saveCustomName.trim() || customSaved || savingCustom}
                 className={[
                   'w-full py-2 rounded-lg border-none text-xs font-semibold transition-colors duration-150',
                   customSaved
                     ? 'bg-green-500/10 text-green-500 cursor-default'
-                    : !saveCustomName.trim()
+                    : !saveCustomName.trim() || savingCustom
                     ? 'bg-elevated text-muted cursor-not-allowed opacity-50'
                     : `${c.createBtn} text-white cursor-pointer`,
                 ].join(' ')}
               >
-                {customSaved ? '✓ Preset saved' : 'Save preset'}
+                {customSaved ? '✓ Preset saved' : savingCustom ? 'Saving…' : 'Save preset'}
               </button>
             </div>
           )}

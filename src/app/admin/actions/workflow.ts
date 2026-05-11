@@ -922,3 +922,85 @@ export async function startOnboardingForTemplateAction(
   REVALIDATE()
   return { ok: true, configId: cfg.id, existed: false }
 }
+
+// ── Custom presets ────────────────────────────────────────────────
+
+export interface CustomPresetRow {
+  id:            string
+  name:          string
+  description:   string | null
+  sectionSlugs:  string[]
+  createdAt:     string
+}
+
+export async function getCustomPresetsAction(): Promise<
+  { ok: true; presets: CustomPresetRow[] } | { ok: false; error: string }
+> {
+  const { user } = await requireAdminSession()
+  const db = createAdminClient()
+
+  const { data, error } = await db
+    .from('workflow_custom_presets')
+    .select('id, name, description, section_slugs, created_at')
+    .eq('created_by', user.id)
+    .order('created_at', { ascending: true })
+
+  if (error) return { ok: false, error: error.message }
+
+  return {
+    ok: true,
+    presets: (data ?? []).map(r => ({
+      id:           r.id,
+      name:         r.name,
+      description:  r.description,
+      sectionSlugs: r.section_slugs,
+      createdAt:    r.created_at,
+    })),
+  }
+}
+
+export async function saveCustomPresetAction(
+  name: string,
+  description: string | null,
+  sectionSlugs: string[],
+): Promise<{ ok: true; preset: CustomPresetRow } | { ok: false; error: string }> {
+  const { user } = await requireAdminSession()
+  if (!name.trim())              return { ok: false, error: 'Name is required' }
+  if (sectionSlugs.length === 0) return { ok: false, error: 'Select at least one section' }
+
+  const db = createAdminClient()
+  const { data, error } = await db
+    .from('workflow_custom_presets')
+    .insert({ created_by: user.id, name: name.trim(), description, section_slugs: sectionSlugs })
+    .select('id, name, description, section_slugs, created_at')
+    .single()
+
+  if (error || !data) return { ok: false, error: error?.message ?? 'Failed to save preset' }
+
+  return {
+    ok: true,
+    preset: {
+      id:           data.id,
+      name:         data.name,
+      description:  data.description,
+      sectionSlugs: data.section_slugs,
+      createdAt:    data.created_at,
+    },
+  }
+}
+
+export async function deleteCustomPresetAction(id: string): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  const { user } = await requireAdminSession()
+  const db = createAdminClient()
+
+  const { error } = await db
+    .from('workflow_custom_presets')
+    .delete()
+    .eq('id', id)
+    .eq('created_by', user.id)
+
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
