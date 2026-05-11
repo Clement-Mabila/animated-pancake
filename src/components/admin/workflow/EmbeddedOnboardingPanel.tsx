@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { CheckCircle2, Circle, Clock, Lock } from 'lucide-react'
+import { CheckCircle2, Circle, Clock, Lock, CirclePlus, ArrowRight, Info } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
 import DynamicSection from '@/components/form/DynamicSection'
 import FleetSection from '@/components/form/sections/FleetSection'
@@ -26,10 +26,10 @@ import type {
 // ── Shared styles ─────────────────────────────────────────────
 
 const inputClass =
-  'w-full bg-surface border border-border rounded-lg text-heading text-sm px-3 py-2 outline-none focus:border-bright-violet/50 transition-colors duration-150'
+  'w-full bg-surface border border-border rounded-2xl text-heading text-sm px-3 py-2 outline-none focus:border-bright-violet/50 transition-colors duration-150'
 
 const labelClass =
-  'block text-xs font-medium text-muted mb-1'
+  'block text-sm font-medium text-muted mb-1.5'
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -48,49 +48,65 @@ function PhaseSelector({
   value,
   onChange,
 }: {
-  value:    ConfigPhase
+  value: ConfigPhase
   onChange: (p: ConfigPhase) => void
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-      {/* Deploy phase excluded — it is an internal MBody go-live checklist, not a client-facing starting point */}
-      {(PHASE_ORDER.filter(p => p !== 'deploy') as ConfigPhase[]).map((p, idx) => {
+    <div className="flex flex-col gap-1.5">
+      {(PHASE_ORDER.filter(p => p !== "deploy") as ConfigPhase[]).map(p => {
         const { count, unit } = PHASE_ITEM_COUNTS[p]
         const isSel = value === p
+
         return (
           <button
             key={p}
             type="button"
             onClick={() => onChange(p)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              padding: '10px 12px', borderRadius: '8px', border: 'none',
-              cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
-              background: isSel ? 'rgba(57,153,254,0.06)' : 'var(--bg-elevated)',
-              outline: isSel ? '1.5px solid rgba(57,153,254,0.35)' : '1px solid rgba(146,140,227,0.18)',
-            }}
+            className={`
+              flex items-center gap-2.5
+              px-3 py-2.5
+              rounded-lg
+              cursor-pointer text-left transition-all
+              border
+
+              ${isSel
+                ? "bg-violet-50 border-violet-300"
+                : "bg-elevated border-violet-200"
+              }
+            `}
           >
-            <div style={{
-              width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '11px', fontWeight: 700,
-              background: isSel ? '#928CE3' : 'rgba(146,140,227,0.12)',
-              color: isSel ? 'white' : 'var(--text-muted)',
-            }}>
-              {idx + 1}
+            {/* Circle count */}
+            <div
+              className={`
+                w-7 h-7
+                rounded-full
+                flex items-center justify-center
+                text-xs font-bold
+                flex-shrink-0
+
+                ${isSel
+                  ? "bg-violet-500 text-white"
+                  : "bg-violet-100 text-violet-700"
+                }
+              `}
+            >
+              {count}
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: isSel ? '#928CE3' : 'var(--text-heading)', marginBottom: '2px' }}>
+
+            {/* Text */}
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-violet-900">
                 {PHASE_LABELS[p]}
-                <span style={{ marginLeft: '6px', fontSize: '10px', fontWeight: 500, color: 'var(--text-muted)' }}>
-                  {count} {unit}
-                </span>
-              </div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              </span>
+
+              <span className="text-xs text-violet-500">
                 {PHASE_DESCRIPTIONS[p]}
-              </div>
+              </span>
+
+              <span className="text-xs text-violet-500">
+                {count} {unit}
+              </span>
             </div>
-            {isSel && <CheckCircle2 size={14} style={{ color: '#928CE3', flexShrink: 0 }} />}
           </button>
         )
       })}
@@ -281,13 +297,23 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
                   </div>
 
                   {cfg ? (
-                    <button
-                      type="button"
-                      onClick={() => onResume(cfg.id)}
-                      className='rounded-2xl bg-violet-600 text-white text-xs font-semibold px-2.5 py-1'
-                    >
-                      Resume →
-                    </button>
+                  <button
+                    type="button"
+                    onClick={() => onResume(cfg.id)}
+                    className="
+                      flex items-center justify-center gap-1
+                      rounded-2xl
+                      bg-violet-600
+                      text-white
+                      text-xs font-semibold
+                      px-2.5 py-1
+                      hover:bg-violet-700
+                      transition-colors
+                    "
+                  >
+                    Resume
+                    <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
+                  </button>
                   ) : (
                     <button
                       type="button"
@@ -311,26 +337,34 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
             )
           })}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '2px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(146,140,227,0.15)' }} />
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>or add a new contact</span>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(146,140,227,0.15)' }} />
-          </div>
+        <div className="flex items-center gap-2 my-1">
+          <div className="flex-1 h-px bg-[rgba(146,140,227,0.15)]" />
+          <span className="text-[10px] text-muted whitespace-nowrap">
+            or add a new contact
+          </span>
+          <div className="flex-1 h-px bg-[rgba(146,140,227,0.15)]" />
+        </div>
 
-          {!showNewForm && (
-            <button
-              type="button"
-              onClick={() => setShowNewForm(true)}
-              style={{
-                padding: '8px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                background: 'var(--bg-elevated)',
-                outline: '1px solid rgba(146,140,227,0.2)',
-                fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)',
-                transition: 'all 0.15s',
-              }}
-            >
-              + New contact
-            </button>
+        {!showNewForm && (
+        <button
+          type="button"
+          onClick={() => setShowNewForm(true)}
+          className="
+            flex items-center justify-center gap-1
+            px-3 py-2
+            rounded-2xl
+            cursor-pointer
+            bg-elevated
+            border border-dashed border-muted
+            text-xs font-medium text-muted
+            transition-all
+            hover:bg-elevated/80 hover:border-muted/80
+          "
+        >
+          <CirclePlus className="h-4 w-4" strokeWidth={2} />
+          New contact
+        </button>
+
           )}
         </div>
       )}
@@ -339,7 +373,8 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
       {showNewForm && (
         <div className="flex flex-col gap-3">
           {contacts.length > 0 && (
-            <p className="text-sm font-semibold  text-heading">New contact</p>
+            <label className="text-sm flex items-center gap-1 text-heading font-semibold mb-3.5 mt-3.5">
+              <Info className="w-3.5 h-3.5" />New contact</label>
           )}
 
           <div className="grid grid-cols-2 gap-2">
@@ -356,7 +391,7 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
           </div>
 
           {/* Locked role — determined by the template binding */}
-          <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-surface border border-border">
+          <div className="flex items-center gap-2 px-2.5 py-2 rounded-2xl bg-surface border border-border">
             <Lock size={11} className="text-muted shrink-0" />
             <span className="text-xs font-semibold text-heading flex-1">
               {ROLE_DEFINITIONS[contactRole]?.label ?? contactRole}
@@ -381,7 +416,10 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
           )}
 
           <div>
-            <label className={labelClass}>Starting phase</label>
+            <label className="text-sm flex items-center gap-1 text-heading font-semibold mb-3.5">
+              <Info className="w-3.5 h-3.5" />
+              Starting phase
+            </label>
             <PhaseSelector value={phase} onChange={setPhase} />
           </div>
 
@@ -389,16 +427,22 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
             type="button"
             onClick={handleStartNew}
             disabled={!isNewFormValid}
-            style={{
-              padding: '9px', borderRadius: '8px', border: 'none',
-              background: isNewFormValid ? '#928CE3' : 'rgba(146,140,227,0.15)',
-              color: isNewFormValid ? 'white' : 'var(--text-muted)',
-              fontSize: '12px', fontWeight: 600,
-              cursor: isNewFormValid ? 'pointer' : 'not-allowed',
-              transition: 'all 0.15s',
-            }}
+            className={`
+              w-full
+              py-3
+              rounded-2xl
+              text-xs font-semibold
+              transition-all
+              flex items-center justify-center gap-2
+
+              ${isNewFormValid
+                ? "bg-violet-600 text-white hover:bg-violet-500 cursor-pointer"
+                : "bg-muted text-white cursor-not-allowed"
+              }
+            `}
           >
-            Start configuration →
+            <span>Start configuration</span>
+            <ArrowRight className="h-4 w-4" strokeWidth={2} />
           </button>
         </div>
       )}

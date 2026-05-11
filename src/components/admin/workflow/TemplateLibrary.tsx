@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { Settings, Rocket, Trash2, Copy, Plus, MoreVertical, RotateCcw, Archive, ArchiveRestore, Play } from 'lucide-react'
+import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
+import { Settings, Rocket, Trash2, Copy, Plus, MoreVertical, RotateCcw, Archive, ArchiveRestore, Play, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { setActiveTemplateAction, deleteTemplateAction, restoreTemplateToDefaultAction, archiveTemplateAction, unarchiveTemplateAction } from '@/app/admin/actions/workflow'
 import TemplateMetadataModal from './TemplateMetadataModal'
@@ -77,10 +77,34 @@ export default function TemplateLibrary({
   onTemplateReset,
 }: Props) {
   const router = useRouter()
-  const [openMenu,  setOpenMenu]  = useState<string | null>(null)
-  const [modal,     setModal]     = useState<ModalState>({ open: false })
-  const [error,     setError]     = useState<string | null>(null)
-  const [pending,   startTransition] = useTransition()
+  const [openMenu,       setOpenMenu]       = useState<string | null>(null)
+  const [modal,          setModal]          = useState<ModalState>({ open: false })
+  const [error,          setError]          = useState<string | null>(null)
+  const [pending,        startTransition]   = useTransition()
+  const [canScrollLeft,  setCanScrollLeft]  = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 4)
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+  }, [])
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    checkScroll()
+    el.addEventListener('scroll', checkScroll, { passive: true })
+    const ro = new ResizeObserver(checkScroll)
+    ro.observe(el)
+    return () => { el.removeEventListener('scroll', checkScroll); ro.disconnect() }
+  }, [checkScroll])
+
+  function scrollBy(px: number) {
+    scrollRef.current?.scrollBy({ left: px, behavior: 'smooth' })
+  }
 
   function closeMenu() { setOpenMenu(null) }
 
@@ -155,7 +179,31 @@ export default function TemplateLibrary({
         </div>
       )}
 
+      <div className="relative">
+        {/* Left arrow */}
+        <button
+          onClick={() => scrollBy(-188)}
+          aria-label="Scroll left"
+          className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border shadow-md transition-all duration-200 -translate-x-1 ${
+            canScrollLeft ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <ChevronLeft size={15} className="text-body-text" strokeWidth={1.8} />
+        </button>
+
+        {/* Right arrow */}
+        <button
+          onClick={() => scrollBy(188)}
+          aria-label="Scroll right"
+          className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border shadow-md transition-all duration-200 translate-x-1 ${
+            canScrollRight ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <ChevronRight size={15} className="text-body-text" strokeWidth={1.8} />
+        </button>
+
       <div
+        ref={scrollRef}
         className="flex gap-4 overflow-x-auto pb-3 p-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         onClick={() => openMenu && closeMenu()}
       >
@@ -356,6 +404,7 @@ export default function TemplateLibrary({
             New Template
           </p>
         </button>
+      </div>
       </div>
 
       {/* Modals */}

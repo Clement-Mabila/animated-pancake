@@ -759,7 +759,7 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
     )
   })() : (
     <div className="p-4 rounded-2xl bg-surface border border-border">
-      <p className="text-base flex items-center gap-2 font-semibold text-heading mb-4.5"> <Info className='w-3.5 h-3.5 bg-violet-500/10 text-violet-500 rounded-2xl'/>How it works</p>
+      <p className="text-sm flex items-center gap-2 font-semibold text-muted mb-4.5"> <Info className='w-4 h-4 bg-violet-500/10 text-violet-500 rounded-2xl'/>How it works</p>
       {[
         ['Pick a preset',      "Choose a template type that matches your client's complexity."],
         ['Customise sections', 'Toggle individual sections on or off from the preset.'],
@@ -768,7 +768,7 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
         ['Review & create',    'Saved as a draft — customise questions in the Sections tab.'],
       ].map(([title, desc], i) => (
         <div key={i} className="flex gap-2.5 mb-3.5">
-          <div className="w-4 h-4 rounded-full bg-violet-500/10 flex items-center justify-center text-xs font-bold text-violet-500 shrink-0 mt-px">
+          <div className="w-5 h-5 rounded-full bg-violet-500/10 flex items-center justify-center text-sm font-semibold text-violet-500 shrink-0 mt-px">
             {i + 1}
           </div>
           <div>
@@ -796,13 +796,13 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
         </p>
       </div>
 
-      <p className="text-base font-semibold flex items-center gap-2 text-heading mb-3"><Info className='w-3.5 h-3.5 bg-violet-500/10 text-violet-500 rounded-2xl'/>Choose a starting point</p>
+      <p className="text-sm font-semibold flex items-center gap-2 text-heading mb-5.5"><Info className='w-4 h-4 bg-violet-500/10 text-violet-500 rounded-2xl'/>Choose a starting point</p>
 
       <div className="flex flex-col gap-1.5">
 
         {presetsLoaded && customPresets.length > 0 && (
           <>
-            <p className="text-sm font-semibold text-heading  mb-0.5">Your presets</p>
+            <p className="text-sm font-medium text-muted mb-0.5">Your presets</p>
             {customPresets.map(cp => {
               const p  = customToPreset(cp)
               const pc = p.colors
@@ -843,7 +843,7 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
                 </div>
               )
             })}
-            <p className="text-sm font-semibold text-heading mt-3 mb-0.5">Starting points</p>
+            <p className="text-sm font-medium text-muted mt-3 mb-0.5">Starting points</p>
           </>
         )}
 
@@ -854,7 +854,7 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
               key={p.key}
               type="button"
               onClick={() => { setPreset(p); setSelectedSections([...p.sections]); setStep(1) }}
-              className="flex items-center gap-3 p-4 rounded-xl border border-border bg-elevated cursor-pointer text-left transition-all duration-200 w-full hover:border-soft-lavender/40 group"
+              className="flex items-center gap-3 p-2.5 rounded-xl border border-border bg-elevated cursor-pointer text-left transition-all duration-200 w-full hover:border-soft-lavender/40 group"
             >
               <div className={`w-8 h-8 rounded-lg ${pc.iconBg} flex items-center justify-center ${pc.iconText} shrink-0`}>
                 {p.icon}

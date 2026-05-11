@@ -209,7 +209,7 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
                 className={`ml-auto flex items-center gap-2 px-3.5 py-2 rounded-2xl border text-xs font-semibold transition-all duration-200
                   ${splitScreen
                     ? 'bg-violet-600 border-none text-white'
-                    : 'bg-white/5 border-purple-400/25 text-slate-400'
+                    : 'bg-elevated border-purple-400/25 text-heading hover:bg-elevated hover:border-purple-400/50 hover:text-purple-600'
                   }`}
               >
                 <Workflow size={16} strokeWidth={1.6} />

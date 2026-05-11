@@ -9,13 +9,13 @@ import type { ConfigPhase } from '@/types'
 import { ArrowRight, Loader2 } from 'lucide-react'
 
 interface InsightSectionProps {
-  data?: Record<string, unknown>
-  onSave: (data: Record<string, unknown>, isComplete: boolean) => void
+  data?:       Record<string, unknown>
+  onSave:      (data: Record<string, unknown>, isComplete: boolean) => void
   onAutoSave?: (data: Record<string, unknown>) => void
-  isSaving?: boolean
-  isComplete?: boolean
-  industry?: string | null
-  phase?: ConfigPhase
+  isSaving?:   boolean
+  isComplete?:  boolean
+  industry?:   string | null
+  phase?:      ConfigPhase
 }
 
 const COMPONENTS = [
@@ -53,7 +53,7 @@ const CHECKPOINTS = [
   { id: 'first_report_sent',     label: 'First automated report sent and signed off by client' },
 ]
 
-export default function InsightSection({ data = {}, onSave, onAutoSave, isSaving, phase }: InsightSectionProps) {
+export default function InsightSection({ data = {}, onSave, onAutoSave, isSaving, phase, industry }: InsightSectionProps) {
   const isPost = phase === 'post'
   const [selectedComponents, setSelectedComponents] = useState<Record<string, boolean>>(
     (data.selected_components as Record<string, boolean>) ?? {}
@@ -224,6 +224,9 @@ export default function InsightSection({ data = {}, onSave, onAutoSave, isSaving
           : 'e.g. ROI < $20/hr, Avg Area Cleaned > 16,000 sq ft/robot/day, Utilization > 4 hrs/day/robot...'}
         value={fields.kpi_targets}
         onChange={v => setField('kpi_targets', v)}
+        sectionId="insight"
+        fieldKey="kpi_targets"
+        industry={industry}
       />
 
       <SectionDivider label="Report delivery" />
@@ -233,6 +236,9 @@ export default function InsightSection({ data = {}, onSave, onAutoSave, isSaving
         placeholder="e.g. Daily email + weekly PDF + monthly deep-dive"
         value={fields.report_frequency}
         onChange={v => setField('report_frequency', v)}
+        sectionId="insight"
+        fieldKey="report_frequency"
+        industry={industry}
       />
 
       <FormField
@@ -240,6 +246,9 @@ export default function InsightSection({ data = {}, onSave, onAutoSave, isSaving
         placeholder="e.g. Site Manager, Cleaning Supervisor, Area Director"
         value={fields.report_recipients}
         onChange={v => setField('report_recipients', v)}
+        sectionId="insight"
+        fieldKey="report_recipients"
+        industry={industry}
       />
 
       <FormField
@@ -247,9 +256,12 @@ export default function InsightSection({ data = {}, onSave, onAutoSave, isSaving
         placeholder="e.g. Email digest, in-app dashboard, exported PDF, BI data feed"
         value={fields.report_format}
         onChange={v => setField('report_format', v)}
+        sectionId="insight"
+        fieldKey="report_format"
+        industry={industry}
       />
 
-      {/* BI integration + benchmarking — Q2 only; not needed until live data exists */}
+      {/* BI integration + benchmarking — post-deploy only; not needed until live data exists */}
       {isPost ? (
         <>
           <FormField
@@ -257,6 +269,9 @@ export default function InsightSection({ data = {}, onSave, onAutoSave, isSaving
             placeholder="e.g. Power BI, Tableau — API endpoint or CSV feed? Confirm connection tested."
             value={fields.bi_integration}
             onChange={v => setField('bi_integration', v)}
+            sectionId="insight"
+            fieldKey="bi_integration"
+            industry={industry}
           />
 
           <FormField
@@ -266,6 +281,9 @@ export default function InsightSection({ data = {}, onSave, onAutoSave, isSaving
             placeholder="vs other sites? vs industry benchmark? vs previous period?"
             value={fields.benchmarking}
             onChange={v => setField('benchmarking', v)}
+            sectionId="insight"
+            fieldKey="benchmarking"
+            industry={industry}
           />
         </>
       ) : (

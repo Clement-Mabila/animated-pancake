@@ -107,6 +107,9 @@ export default function FSMSection({ data = {}, onSave, onAutoSave, isSaving, in
           placeholder="e.g. Standard £70/hr/robot or negotiated rate"
           value={fields.sla_credit_rate}
           onChange={v => setField('sla_credit_rate', v)}
+          sectionId="fsm"
+          fieldKey="sla_credit_rate"
+          industry={industry}
         />
       </div>
 
@@ -117,6 +120,9 @@ export default function FSMSection({ data = {}, onSave, onAutoSave, isSaving, in
         placeholder="e.g. Email sign-off, client portal, digital signature, verbal + email follow-up"
         value={fields.breakfix_approval_method}
         onChange={v => setField('breakfix_approval_method', v)}
+        sectionId="fsm"
+        fieldKey="breakfix_approval_method"
+        industry={industry}
       />
 
       <FormField
@@ -124,6 +130,9 @@ export default function FSMSection({ data = {}, onSave, onAutoSave, isSaving, in
         placeholder="Name / role who approves and target response time"
         value={fields.breakfix_approval_contact}
         onChange={v => setField('breakfix_approval_contact', v)}
+        sectionId="fsm"
+        fieldKey="breakfix_approval_contact"
+        industry={industry}
       />
 
       <FormField
@@ -131,6 +140,9 @@ export default function FSMSection({ data = {}, onSave, onAutoSave, isSaving, in
         placeholder="Does the client want access to view live WO status and service history?"
         value={fields.client_portal_access}
         onChange={v => setField('client_portal_access', v)}
+        sectionId="fsm"
+        fieldKey="client_portal_access"
+        industry={industry}
       />
 
       <SectionDivider label="Reporting & feedback" />
@@ -142,6 +154,9 @@ export default function FSMSection({ data = {}, onSave, onAutoSave, isSaving, in
         placeholder="Who receives the automated service report on WO close? e.g. Site Manager + Ops Director"
         value={fields.wo_report_delivery}
         onChange={v => setField('wo_report_delivery', v)}
+        sectionId="fsm"
+        fieldKey="wo_report_delivery"
+        industry={industry}
       />
 
       <FormField
@@ -149,6 +164,9 @@ export default function FSMSection({ data = {}, onSave, onAutoSave, isSaving, in
         placeholder="Confirm client opts in to post-WO service rating requests"
         value={fields.csat_optin}
         onChange={v => setField('csat_optin', v)}
+        sectionId="fsm"
+        fieldKey="csat_optin"
+        industry={industry}
       />
 
       <FormField
@@ -158,6 +176,9 @@ export default function FSMSection({ data = {}, onSave, onAutoSave, isSaving, in
         placeholder="Confirm client understands Employee / Guest / Third-Party damage billing. Who verifies damage type?"
         value={fields.damage_classification}
         onChange={v => setField('damage_classification', v)}
+        sectionId="fsm"
+        fieldKey="damage_classification"
+        industry={industry}
       />
 
       <SectionDivider label="Preventive maintenance" />
@@ -168,12 +189,18 @@ export default function FSMSection({ data = {}, onSave, onAutoSave, isSaving, in
           placeholder="Standard: every 14 days per robot"
           value={fields.pm_schedule_recurrence}
           onChange={v => setField('pm_schedule_recurrence', v)}
+          sectionId="fsm"
+          fieldKey="pm_schedule_recurrence"
+          industry={industry}
         />
         <FormField
           label="PM completion report recipient"
           placeholder="e.g. Property Operator, Facilities Manager, H&S Officer"
           value={fields.pm_completion_recipient}
           onChange={v => setField('pm_completion_recipient', v)}
+          sectionId="fsm"
+          fieldKey="pm_completion_recipient"
+          industry={industry}
         />
       </div>
 
@@ -186,6 +213,9 @@ export default function FSMSection({ data = {}, onSave, onAutoSave, isSaving, in
         placeholder="Who coordinates OEM defective part handover? Parts not collected within 30 days flagged to hub manager."
         value={fields.defective_parts_handover}
         onChange={v => setField('defective_parts_handover', v)}
+        sectionId="fsm"
+        fieldKey="defective_parts_handover"
+        industry={industry}
       />
 
       <FormField
@@ -193,6 +223,9 @@ export default function FSMSection({ data = {}, onSave, onAutoSave, isSaving, in
         placeholder="Who on the client side is present for new robot commissioning WOs? Name, role, site"
         value={fields.commissioning_contact}
         onChange={v => setField('commissioning_contact', v)}
+        sectionId="fsm"
+        fieldKey="commissioning_contact"
+        industry={industry}
       />
 
       <CheckpointList
