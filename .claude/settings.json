@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Select-String -Path 'C:\\\\Users\\\\TMA\\\\MBody Space\\\\MBody Client onboarding checklist\\\\mbody-onboarding-checklist-v1.1.html' -Pattern 'placeholder' | Select-Object -First 80 | Format-Table LineNumber, Line -Wrap\")",
+      "Bash(powershell -Command \"Get-ChildItem 'C:\\\\Users\\\\TMA\\\\MBody Space\\\\MBody Client onboarding checklist' -Recurse -Include '*.sql','schema.ts','*.schema.ts' | Select-Object FullName | Head -20\")",
+      "Bash(powershell -Command \"Get-ChildItem 'C:\\\\Users\\\\TMA\\\\MBody Space\\\\MBody Client onboarding checklist\\\\src\\\\lib' -Recurse | Select-Object FullName\")",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\TMA\\\\MBody Space\\\\MBody Client onboarding checklist\\\\workflow_dynamic_questions_migration.sql'\")",
+      "Bash(grep -o '{l:\"[^\"]*\",t:\"[^\"]*\",p:\"[^\"]*\"}' \"C:/Users/TMA/MBody Space/MBody Client onboarding checklist/mbody-onboarding-checklist-v1.1.html\")",
+      "Bash(powershell -Command \"Get-ChildItem -Filter '*.xlsx' | Select-Object Name, FullName\")",
+      "Bash(powershell -Command ' *)"
+    ]
+  }
+}

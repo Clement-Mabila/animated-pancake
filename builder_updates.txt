@@ -1,0 +1,52 @@
+Template Builder – Updated Documentation (Integrated Real Time Onboarding)
+1. Overview This updated documentation reflects the enhanced operational model for the
+onboarding template builder. The system now supports real time onboarding during template
+creation. Users can build templates and simultaneously capture client responses directly within the
+same interface. This reduces workflow fragmentation, improves user efficiency, and simplifies the
+process for non technical operators.
+2. Core Functional Enhancements
+2.1 Split Screen Real Time Template Builder The interface is divided into two synchronized
+panels: - Left Panel: Template configuration (sections, fields, logic, properties). - Right Panel: Live
+preview AND live input capture.
+Any field added on the left appears instantly on the right. The right panel is fully editable, enabling
+immediate data entry during the onboarding session.
+2.2 Integrated Onboarding During Template Creation Users can now onboard a client while
+constructing or modifying the template. Steps: 1. Add a question or section on the left. 2.
+Immediately fill in the client's answer on the right. 3. The system stores both the structure and the
+responses in real time.
+This eliminates the old “publish template → switch to onboarding → fill form” workflow.
+2.3 Client Specific or Global Templates Every template supports: - Global mode: usable for all
+clients. - Client locked mode: restricted to one designated client.
+If client locked, the system prompts the user to select or enter the client name.
+2.4 AI Assisted Template and Onboarding Orchestration The AI assistant serves two roles: 
+Template architect: guiding users through adding or modifying fields. - Onboarding facilitator:
+prompting for answers while the user interacts with the client.
+AI workflow: 1. AI greets and asks if onboarding is happening now. 2. AI asks for client details. 3. AI
+suggests sections/questions. 4. As each question is added, AI asks for the answer. 5. Both question
+and response appear immediately. 6. AI confirms when onboarding is complete and finalizes the
+template.
+2.5 Real Time Validation and Auto-Suggestions As Tim inputs client answers: - System validates
+input types (dates, numbers, documents, etc.). - Suggests follow up questions where relevant. 
+Warns before adding redundant or conflicting fields.
+2.6 Pre Built Template Library Users can import templates and customize or onboard immediately.
+2.7 Versioning and Audit Trail Every modification is stored with: - Timestamp - Editor - Change
+summary
+Rollback is supported.
+2.8 Post Session Feedback Loop After completing onboarding, the system prompts the user: 
+“Was this session easy?” - “Were the AI prompts useful?” - “What should be added next time?”
+Feedback updates AI behavior and template suggestions.
+3. Updated User Experience Flow
+1. User opens template builder. 2. System asks: “Are you building a template, onboarding a client,
+or both?” 3. If both: - Left panel becomes editable for structure. - Right panel becomes editable for
+responses. 4. AI asks for client details. 5. User adds or selects sections. 6. As fields appear, user
+immediately enters client answers. 7. AI continues prompting until session ends. 8. System saves: 
+The final template structure. - The onboarding data captured. 9. Optionally publish the template for
+future reuse.
+4. Updated Priority Roadmap
+Phase 1: Core split-screen builder with interactive preview. Phase 2: Real-time input
+synchronization and form state storage. Phase 3: Integrated onboarding workflow + AI prompt
+engine. Phase 4: Template locking, versioning, audit trail, and template library. Phase 5: UX
+refinement, validations, and post-session feedback.
+5. Conclusion The upgraded system merges template building and onboarding into a single
+synchronized environment. This removes unnecessary complexity and makes the workflow
+intuitive, especially for non technical users like Tim. The AI guidance, real time updates, 

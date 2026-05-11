@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(powershell -Command ' *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\TMA\\\\MBody Space\\\\MBody Client onboarding checklist\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\TMA\\\\MBody Space\\\\MBody Client onboarding checklist\" -Recurse -Directory | Where-Object { $_.Name -eq \"sections\" } | Select-Object -ExpandProperty FullName)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\TMA\\\\MBody Space\\\\MBody Client onboarding checklist\" -Recurse -Filter \"*.tsx\" -Filter \"*.ts\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\TMA\\\\MBody Space\\\\MBody Client onboarding checklist\\\\src\\\\components\\\\admin\\\\dashboard\" -Recurse)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(python3)",
+      "Bash(powershell -Command \"pip install pandas openpyxl -q 2>&1 | findstr /I error || echo 'Installation complete'\")",
+      "Bash(powershell -Command \"pip install pandas openpyxl --quiet\")",
+      "Bash(powershell -Command \"Get-ChildItem -Filter '*.xlsx' | Select-Object Name\")",
+      "Bash(python)",
+      "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\(JSON.stringify\\({deps: p.dependencies, dev: p.devDependencies}, null, 2\\)\\)\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\TMA\\\\MBody Space\\\\MBody Client onboarding checklist\" -Filter \"tailwind*\")",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\TMA\\\\MBody Space\\\\MBody Client onboarding checklist\" -File | Where-Object {$_.Name -match \"^tailwind|^next|\\\\.config\" } | Select-Object Name)",
+      "WebFetch(domain:localhost)",
+      "mcp__ide__executeCode",
+      "mcp__ide__getDiagnostics",
+      "Bash(Get-ChildItem -Recurse -Directory)"
+    ]
+  }
+}

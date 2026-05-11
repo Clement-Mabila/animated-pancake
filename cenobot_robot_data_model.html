@@ -1,0 +1,123 @@
+
+<style>
+  h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .schema{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;padding:1rem 0}
+  .section{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+  .sec-head{display:flex;align-items:center;gap:8px;padding:10px 14px 9px;border-bottom:0.5px solid var(--color-border-tertiary)}
+  .sec-head i{font-size:17px;aria-hidden:true}
+  .sec-head span{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+  .field-row{display:flex;justify-content:space-between;align-items:center;padding:6px 14px;border-bottom:0.5px solid var(--color-border-tertiary);gap:8px}
+  .field-row:last-child{border-bottom:none}
+  .fname{font-size:12px;color:var(--color-text-secondary);font-family:var(--font-mono)}
+  .ftype{font-size:11px;padding:2px 7px;border-radius:4px;white-space:nowrap;font-weight:500}
+  .t-str{background:var(--color-background-info);color:var(--color-text-info)}
+  .t-num{background:var(--color-background-success);color:var(--color-text-success)}
+  .t-bool{background:var(--color-background-warning);color:var(--color-text-warning)}
+  .t-enum{background:var(--color-background-secondary);color:var(--color-text-secondary);border:0.5px solid var(--color-border-secondary)}
+  .t-ts{background:var(--color-background-danger);color:var(--color-text-danger)}
+  .t-obj{background:#EEEDFE;color:#3C3489}
+  @media (prefers-color-scheme:dark){.t-obj{background:#26215C;color:#AFA9EC}}
+  .pk-badge{font-size:10px;padding:1px 5px;border-radius:3px;background:var(--color-background-warning);color:var(--color-text-warning);font-weight:500;margin-left:4px}
+  .fk-badge{font-size:10px;padding:1px 5px;border-radius:3px;background:var(--color-background-info);color:var(--color-text-info);font-weight:500;margin-left:4px}
+  .fname-wrap{display:flex;align-items:center}
+</style>
+<h2 class="sr-only">CenoBots robot data model — six groups of fields: identity, live status, location, performance, hardware sensors, and maintenance</h2>
+
+<div class="schema">
+
+  <!-- Identity -->
+  <div class="section">
+    <div class="sec-head" style="background:var(--color-background-info)">
+      <i class="ti ti-robot" style="color:var(--color-text-info)"></i>
+      <span style="color:var(--color-text-info)">Identity</span>
+    </div>
+    <div class="field-row"><div class="fname-wrap"><span class="fname">robot_id</span><span class="pk-badge">PK</span></div><span class="ftype t-str">uuid</span></div>
+    <div class="field-row"><span class="fname">name</span><span class="ftype t-str">string</span></div>
+    <div class="field-row"><span class="fname">model</span><span class="ftype t-enum">enum · L3 / L4 / L50 / S5 / SP50</span></div>
+    <div class="field-row"><span class="fname">serial_number</span><span class="ftype t-str">string</span></div>
+    <div class="field-row"><span class="fname">firmware_version</span><span class="ftype t-str">string</span></div>
+    <div class="field-row"><div class="fname-wrap"><span class="fname">facility_id</span><span class="fk-badge">FK</span></div><span class="ftype t-str">uuid</span></div>
+    <div class="field-row"><span class="fname">commissioned_at</span><span class="ftype t-ts">timestamp</span></div>
+  </div>
+
+  <!-- Live Status -->
+  <div class="section">
+    <div class="sec-head" style="background:var(--color-background-success)">
+      <i class="ti ti-activity" style="color:var(--color-text-success)"></i>
+      <span style="color:var(--color-text-success)">Live status</span>
+    </div>
+    <div class="field-row"><span class="fname">operational_status</span><span class="ftype t-enum">enum · active / idle / charging / error / paused</span></div>
+    <div class="field-row"><span class="fname">current_task</span><span class="ftype t-str">string?</span></div>
+    <div class="field-row"><span class="fname">battery_level_pct</span><span class="ftype t-num">float 0–100</span></div>
+    <div class="field-row"><span class="fname">fresh_water_pct</span><span class="ftype t-num">float 0–100</span></div>
+    <div class="field-row"><span class="fname">dirty_water_pct</span><span class="ftype t-num">float 0–100</span></div>
+    <div class="field-row"><span class="fname">detergent_pct</span><span class="ftype t-num">float 0–100</span></div>
+    <div class="field-row"><span class="fname">is_online</span><span class="ftype t-bool">boolean</span></div>
+    <div class="field-row"><span class="fname">last_heartbeat_at</span><span class="ftype t-ts">timestamp</span></div>
+  </div>
+
+  <!-- Location & Navigation -->
+  <div class="section">
+    <div class="sec-head" style="background:var(--color-background-secondary)">
+      <i class="ti ti-map-pin" style="color:var(--color-text-secondary)"></i>
+      <span>Location & navigation</span>
+    </div>
+    <div class="field-row"><span class="fname">zone_id</span><span class="ftype t-str">string</span></div>
+    <div class="field-row"><span class="fname">floor_level</span><span class="ftype t-num">int</span></div>
+    <div class="field-row"><span class="fname">pos_x</span><span class="ftype t-num">float (m)</span></div>
+    <div class="field-row"><span class="fname">pos_y</span><span class="ftype t-num">float (m)</span></div>
+    <div class="field-row"><span class="fname">heading_deg</span><span class="ftype t-num">float 0–360</span></div>
+    <div class="field-row"><span class="fname">map_id</span><span class="ftype t-str">uuid</span></div>
+    <div class="field-row"><span class="fname">home_dock_id</span><span class="ftype t-str">uuid</span></div>
+    <div class="field-row"><span class="fname">auto_return_enabled</span><span class="ftype t-bool">boolean</span></div>
+  </div>
+
+  <!-- Performance & Cleaning -->
+  <div class="section">
+    <div class="sec-head" style="background:var(--color-background-success)">
+      <i class="ti ti-chart-bar" style="color:var(--color-text-success)"></i>
+      <span style="color:var(--color-text-success)">Performance & cleaning</span>
+    </div>
+    <div class="field-row"><span class="fname">cleaning_mode</span><span class="ftype t-enum">enum · scrub / sweep / spot / dry</span></div>
+    <div class="field-row"><span class="fname">cleaning_width_mm</span><span class="ftype t-num">int</span></div>
+    <div class="field-row"><span class="fname">brush_pressure_kg</span><span class="ftype t-num">float</span></div>
+    <div class="field-row"><span class="fname">speed_mps</span><span class="ftype t-num">float</span></div>
+    <div class="field-row"><span class="fname">area_cleaned_today_m2</span><span class="ftype t-num">float</span></div>
+    <div class="field-row"><span class="fname">productivity_m2_hr</span><span class="ftype t-num">float</span></div>
+    <div class="field-row"><span class="fname">water_saved_pct</span><span class="ftype t-num">float</span></div>
+    <div class="field-row"><span class="fname">session_start_at</span><span class="ftype t-ts">timestamp?</span></div>
+  </div>
+
+  <!-- Hardware & Sensors -->
+  <div class="section">
+    <div class="sec-head" style="background:#EEEDFE">
+      <i class="ti ti-cpu" style="color:#534AB7"></i>
+      <span style="color:#534AB7">Hardware & sensors</span>
+    </div>
+    <div class="field-row"><span class="fname">lidar_status</span><span class="ftype t-enum">enum · ok / degraded / fault</span></div>
+    <div class="field-row"><span class="fname">depth_camera_status</span><span class="ftype t-enum">enum · ok / degraded / fault</span></div>
+    <div class="field-row"><span class="fname">bumper_sensor_ok</span><span class="ftype t-bool">boolean</span></div>
+    <div class="field-row"><span class="fname">hepa_filter_ok</span><span class="ftype t-bool">boolean</span></div>
+    <div class="field-row"><span class="fname">brush_ok</span><span class="ftype t-bool">boolean</span></div>
+    <div class="field-row"><span class="fname">squeegee_ok</span><span class="ftype t-bool">boolean</span></div>
+    <div class="field-row"><span class="fname">ai_chip_model</span><span class="ftype t-str">string · e.g. NVIDIA 100 TOPS</span></div>
+    <div class="field-row"><span class="fname">wifi_rssi_dbm</span><span class="ftype t-num">int</span></div>
+  </div>
+
+  <!-- Maintenance & Scheduling -->
+  <div class="section">
+    <div class="sec-head" style="background:var(--color-background-warning)">
+      <i class="ti ti-tools" style="color:var(--color-text-warning)"></i>
+      <span style="color:var(--color-text-warning)">Maintenance & scheduling</span>
+    </div>
+    <div class="field-row"><span class="fname">total_runtime_hrs</span><span class="ftype t-num">float</span></div>
+    <div class="field-row"><span class="fname">last_service_at</span><span class="ftype t-ts">timestamp</span></div>
+    <div class="field-row"><span class="fname">next_service_due_at</span><span class="ftype t-ts">timestamp</span></div>
+    <div class="field-row"><span class="fname">filter_last_replaced_at</span><span class="ftype t-ts">timestamp</span></div>
+    <div class="field-row"><span class="fname">brush_last_replaced_at</span><span class="ftype t-ts">timestamp</span></div>
+    <div class="field-row"><span class="fname">schedule</span><span class="ftype t-obj">object (JSON)</span></div>
+    <div class="field-row"><span class="fname">error_log</span><span class="ftype t-obj">object[ ] (JSON)</span></div>
+    <div class="field-row"><span class="fname">notes</span><span class="ftype t-str">text?</span></div>
+  </div>
+
+</div>

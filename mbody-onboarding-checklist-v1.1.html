@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MBody AI — Orchestrator Client Onboarding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Brand exact colours */
+    --electric-blue: #0081FF;
+    --bright-violet: #A52AE1;
+    --soft-lavender: #928CE3;
+    --cool-gray: #C6C6C6;
+    --deep-black: #000000;
+    --white: #FFFFFF;
+
+    /* Gradient stops */
+    --grad-blue: linear-gradient(135deg, #0081FF 0%, #000000 100%);
+    --grad-violet: linear-gradient(135deg, #A52AE1 0%, #000000 100%);
+    --grad-iris: linear-gradient(135deg, #A52AE1 0%, #3999FE 100%);
+    --grad-text: linear-gradient(90deg, #FFFFFF 0%, #BF93F7 100%);
+    --grad-accent: linear-gradient(135deg, #0081FF 0%, #A52AE1 100%);
+
+    /* Light mode surfaces */
+    --bg-page: #F5F5F8;
+    --bg-white: #FFFFFF;
+    --bg-section: #FFFFFF;
+    --bg-field: #F8F8FC;
+    --bg-tag: #F2F1FB;
+    --bg-header: rgba(255,255,255,0.92);
+
+    /* Borders */
+    --border-light: rgba(165,42,225,0.10);
+    --border-med: rgba(165,42,225,0.20);
+    --border-blue: rgba(0,129,255,0.20);
+
+    /* Text */
+    --text-primary: #0D0D1A;
+    --text-secondary: #5A5A7A;
+    --text-muted: #9898B0;
+    --text-label: #7B6FA0;
+
+    /* Semantic */
+    --red: #E53935;
+    --amber: #F57C00;
+    --green: #1B8A5A;
+
+    --radius: 12px;
+    --radius-sm: 8px;
+    --font: 'Inter', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-page);
+    color: var(--text-primary);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── STICKY HEADER ── */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-header);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-light);
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    box-shadow: 0 1px 24px rgba(165,42,225,0.06);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  /* SVG logo mark — circuit brain outline in gradient */
+  .logo-icon { width: 32px; height: 32px; flex-shrink: 0; }
+
+  .logo-wordmark {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(90deg, #0081FF 0%, #A52AE1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .progress-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .hp-track {
+    width: 100px;
+    height: 4px;
+    background: rgba(165,42,225,0.12);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .hp-fill {
+    height: 100%;
+    background: var(--grad-accent);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .hp-pct {
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--grad-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    min-width: 32px;
+  }
+
+  /* ── PAGE ── */
+  .page {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 52px 40px 80px;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    margin-bottom: 44px;
+    animation: fadeUp 0.5s ease both;
+    position: relative;
+  }
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--electric-blue);
+    margin-bottom: 14px;
+  }
+  .hero-eyebrow-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--grad-accent);
+  }
+  .hero h1 {
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+  }
+  .hero h1 .grad {
+    background: linear-gradient(90deg, #0081FF 0%, #A52AE1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: 15px;
+    color: var(--text-secondary);
+    max-width: 580px;
+    line-height: 1.65;
+    font-weight: 400;
+  }
+
+  /* ── PROGRESS DOTS ── */
+  .progress-overview {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 8px;
+    margin-bottom: 40px;
+    animation: fadeUp 0.5s 0.08s ease both;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    box-shadow: 0 2px 16px rgba(165,42,225,0.05);
+  }
+  .po-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .po-step:hover { opacity: 0.75; }
+  .po-dot {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-med);
+    background: var(--bg-field);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: all 0.3s;
+  }
+  .po-dot.done {
+    background: var(--grad-accent);
+    border-color: transparent;
+    color: white;
+  }
+  .po-dot.active {
+    border-color: var(--electric-blue);
+    color: var(--electric-blue);
+    background: rgba(0,129,255,0.06);
+  }
+  .po-label {
+    font-size: 8px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-align: center;
+    letter-spacing: 0.04em;
+    line-height: 1.3;
+  }
+  .po-step.done .po-label { color: var(--bright-violet); }
+
+  /* ── SECTION CARD ── */
+  .section {
+    background: var(--bg-section);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    animation: fadeUp 0.4s ease both;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .section:hover { box-shadow: 0 2px 16px rgba(165,42,225,0.07); }
+  .section.open {
+    border-color: var(--border-med);
+    box-shadow: 0 4px 24px rgba(165,42,225,0.10);
+  }
+  .section.complete {
+    border-color: rgba(0,129,255,0.28);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .section-header:hover { background: rgba(165,42,225,0.025); }
+
+  .sec-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-med);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: all 0.3s;
+    background: var(--bg-field);
+  }
+  .sec-num.done {
+    background: var(--grad-accent);
+    border-color: transparent;
+    color: white;
+    font-size: 13px;
+  }
+  .sec-num.active {
+    border-color: var(--electric-blue);
+    color: var(--electric-blue);
+    background: rgba(0,129,255,0.06);
+  }
+
+  .sec-title-wrap { flex: 1; min-width: 0; }
+  .sec-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+  .sec-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .sec-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid var(--border-light);
+    color: var(--text-muted);
+    background: var(--bg-field);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sec-badge.done {
+    background: rgba(0,129,255,0.08);
+    border-color: rgba(0,129,255,0.25);
+    color: var(--electric-blue);
+  }
+
+  .chevron {
+    width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    font-size: 10px;
+    transition: transform 0.25s;
+    flex-shrink: 0;
+  }
+  .section.open .chevron { transform: rotate(90deg); }
+
+  .section-body {
+    display: none;
+    padding: 0 20px 22px;
+    border-top: 1px solid var(--border-light);
+  }
+  .section.open .section-body { display: block; }
+
+  .sec-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 14px 0 16px;
+    line-height: 1.65;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 16px;
+  }
+
+  /* ── FIELDS ── */
+  .field-group { margin-bottom: 12px; }
+  .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .field-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+
+  .field-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--text-label);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  input[type="text"], textarea, select {
+    width: 100%;
+    background: var(--bg-field);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 8px 11px;
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    resize: vertical;
+  }
+  input[type="text"]:focus, textarea:focus, select:focus {
+    border-color: var(--electric-blue);
+    background: var(--bg-white);
+    box-shadow: 0 0 0 3px rgba(0,129,255,0.10);
+  }
+  input::placeholder, textarea::placeholder { color: var(--text-muted); }
+
+  /* ── SECTION DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: var(--border-light);
+    margin: 14px 0;
+  }
+
+  /* ── TAGS ── */
+  .tag-section-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--text-label);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .tag-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .tag {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-med);
+    color: var(--text-secondary);
+    background: var(--bg-tag);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .tag:hover { border-color: var(--soft-lavender); color: var(--bright-violet); }
+  .tag.on {
+    background: rgba(165,42,225,0.08);
+    border-color: rgba(165,42,225,0.35);
+    color: var(--bright-violet);
+    font-weight: 600;
+  }
+
+  /* ── ROLE CARDS ── */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .role-card {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 11px 13px;
+    background: var(--bg-field);
+    transition: border-color 0.15s;
+  }
+  .role-card:hover { border-color: var(--border-med); }
+  .role-scope {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .role-scope.fleet { color: var(--electric-blue); }
+  .role-scope.site { color: var(--bright-violet); }
+  .role-scope.mbody {
+    background: var(--grad-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .role-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  /* ── CHECKPOINTS ── */
+  .chk-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--text-label);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .chk-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+  .chk-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 11px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+    background: var(--bg-field);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .chk-item:hover { border-color: var(--border-med); background: rgba(165,42,225,0.025); }
+  .chk-item.checked {
+    background: rgba(0,129,255,0.05);
+    border-color: rgba(0,129,255,0.25);
+  }
+  .chk-box {
+    width: 17px; height: 17px;
+    border-radius: 5px;
+    border: 1.5px solid var(--border-med);
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    transition: all 0.15s;
+  }
+  .chk-item.checked .chk-box {
+    background: var(--grad-accent);
+    border-color: transparent;
+  }
+  .chk-mark {
+    display: none;
+    width: 9px; height: 6px;
+    border-left: 2px solid white;
+    border-bottom: 2px solid white;
+    transform: rotate(-45deg) translateY(-1px);
+  }
+  .chk-item.checked .chk-mark { display: block; }
+  .chk-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    flex: 1;
+  }
+  .chk-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .chk-item.checked .chk-text { color: var(--text-muted); }
+
+  /* ── ALERT MATRIX ── */
+  .alert-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 14px;
+    font-size: 12px;
+    table-layout: fixed;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+  }
+  .alert-table th {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-label);
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--bg-field);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .alert-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+    background: white;
+  }
+  .alert-table tr:last-child td { border-bottom: none; }
+  .p-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+  .p-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .p-critical { background: rgba(229,57,53,0.10); color: #C62828; }
+  .p-critical .p-dot { background: #E53935; }
+  .p-high { background: rgba(245,124,0,0.10); color: #E65100; }
+  .p-high .p-dot { background: #F57C00; }
+  .p-medium { background: rgba(0,129,255,0.10); color: #0057B8; }
+  .p-medium .p-dot { background: #0081FF; }
+  .p-low { background: rgba(27,138,90,0.10); color: #1B5E20; }
+  .p-low .p-dot { background: #1B8A5A; }
+  .alert-ex { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+  /* ── ROBOT REGISTER ── */
+  .robot-register {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .reg-card {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 10px 11px;
+    background: var(--bg-field);
+  }
+  .reg-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text-label);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ── INTEGRATION BLOCKS ── */
+  .int-block {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    background: var(--bg-field);
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .int-block:hover { border-color: var(--border-med); }
+  .int-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-light);
+    background: white;
+  }
+  .int-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .ib-sso { background: rgba(0,129,255,0.10); color: #0057B8; border: 1px solid rgba(0,129,255,0.25); }
+  .ib-task { background: rgba(165,42,225,0.08); color: #7B1FA2; border: 1px solid rgba(165,42,225,0.25); }
+  .ib-fin { background: rgba(245,124,0,0.10); color: #BF360C; border: 1px solid rgba(245,124,0,0.25); }
+  .ib-fac { background: rgba(27,138,90,0.10); color: #1B6B45; border: 1px solid rgba(27,138,90,0.25); }
+  .ib-other { background: var(--bg-field); color: var(--text-muted); border: 1px solid var(--border-light); }
+  .int-desc { font-size: 12px; color: var(--text-secondary); flex: 1; line-height: 1.4; }
+
+  .int-status-row { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .status-btn {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border-med);
+    color: var(--text-muted);
+    background: white;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font);
+  }
+  .status-btn:hover { border-color: var(--electric-blue); color: var(--electric-blue); }
+  .status-btn.s-required { background: rgba(0,129,255,0.08); border-color: rgba(0,129,255,0.4); color: var(--electric-blue); }
+  .status-btn.s-scope { background: rgba(245,124,0,0.08); border-color: rgba(245,124,0,0.35); color: #E65100; }
+  .status-btn.s-no { background: var(--bg-field); border-color: var(--border-light); color: var(--text-muted); }
+  .int-body { padding: 14px; }
+  .int-body.hidden { display: none; }
+
+  /* ── COMPLETE BUTTON ── */
+  .complete-btn {
+    width: 100%;
+    padding: 11px 16px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--grad-accent);
+    color: white;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    box-shadow: 0 2px 12px rgba(0,129,255,0.25);
+  }
+  .complete-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(165,42,225,0.3); }
+  .complete-btn:active { transform: translateY(0); }
+  .complete-btn.done {
+    background: rgba(0,129,255,0.08);
+    color: var(--electric-blue);
+    box-shadow: none;
+    cursor: default;
+    border: 1px solid rgba(0,129,255,0.25);
+    transform: none;
+    opacity: 1;
+  }
+
+  /* ── HERO GRADIENT ORBS ── */
+  .hero-orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(60px);
+    opacity: 0.08;
+  }
+  .orb1 { width: 300px; height: 300px; background: #A52AE1; top: -80px; right: -60px; }
+  .orb2 { width: 200px; height: 200px; background: #0081FF; top: 20px; right: 120px; }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center;
+    padding: 28px 40px 44px;
+    font-size: 12px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-light);
+    letter-spacing: 0.04em;
+  }
+  .footer strong {
+    background: var(--grad-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section:nth-child(1) { animation-delay:0.04s }
+  .section:nth-child(2) { animation-delay:0.08s }
+  .section:nth-child(3) { animation-delay:0.12s }
+  .section:nth-child(4) { animation-delay:0.16s }
+  .section:nth-child(5) { animation-delay:0.20s }
+  .section:nth-child(6) { animation-delay:0.24s }
+  .section:nth-child(7) { animation-delay:0.28s }
+  .section:nth-child(8) { animation-delay:0.32s }
+  .section:nth-child(9) { animation-delay:0.36s }
+
+  /* ── RESPONSIVE ── */
+
+  /* ── REPORT COMPONENTS ── */
+  .comp-label {
+    display:block; font-size:11px; font-weight:600; letter-spacing:.05em;
+    color:var(--text-label); text-transform:uppercase; margin-bottom:10px;
+  }
+  .comp-grid {
+    display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:16px;
+  }
+  .comp-card {
+    display:flex; align-items:flex-start; gap:10px;
+    border:1px solid var(--border-light); border-radius:var(--radius-sm);
+    padding:10px 12px; background:var(--bg-field); cursor:pointer;
+    transition:all .15s; user-select:none;
+  }
+  .comp-card:hover { border-color:var(--border-med); background:rgba(165,42,225,.025); }
+  .comp-card.on {
+    background:rgba(165,42,225,.07); border-color:rgba(165,42,225,.35);
+  }
+  .comp-icon {
+    width:32px; height:32px; border-radius:8px; flex-shrink:0;
+    background:rgba(165,42,225,.10); border:1px solid rgba(165,42,225,.2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:700; color:var(--bright-violet); letter-spacing:.03em;
+    transition:all .15s;
+  }
+  .comp-card.on .comp-icon {
+    background:var(--bright-violet); color:white; border-color:var(--bright-violet);
+  }
+  .comp-info { flex:1; min-width:0; }
+  .comp-name { font-size:13px; font-weight:600; color:var(--text-primary); line-height:1.3; }
+  .comp-desc { font-size:11px; color:var(--text-muted); margin-top:2px; line-height:1.4; }
+  .comp-card.on .comp-name { color:var(--bright-violet); }
+
+  /* ── KPI SELECTOR ── */
+  .kpi-grid {
+    display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin-bottom:16px;
+  }
+  .kpi-card {
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    border:1px solid var(--border-light); border-radius:var(--radius-sm);
+    padding:9px 12px; background:var(--bg-field); cursor:pointer;
+    transition:all .15s; user-select:none;
+  }
+  .kpi-card:hover { border-color:var(--border-med); }
+  .kpi-card.on {
+    background:rgba(0,129,255,.06); border-color:rgba(0,129,255,.3);
+  }
+  .kpi-left { display:flex; flex-direction:column; gap:2px; }
+  .kpi-name { font-size:13px; font-weight:600; color:var(--text-primary); }
+  .kpi-card.on .kpi-name { color:var(--electric-blue); }
+  .kpi-meta {
+    font-size:10px; font-weight:600; letter-spacing:.05em; padding:2px 6px;
+    border-radius:10px; align-self:flex-start;
+  }
+  .kpi-meta.direct {
+    background:rgba(0,129,255,.10); color:#0057B8;
+  }
+  .kpi-meta.derived {
+    background:rgba(165,42,225,.10); color:#7B1FA2;
+  }
+  .kpi-toggle {
+    width:16px; height:16px; border-radius:50%;
+    border:1.5px solid var(--border-med); flex-shrink:0;
+    background:white; display:flex; align-items:center; justify-content:center;
+    transition:all .15s;
+  }
+  .kpi-card.on .kpi-toggle {
+    background:var(--electric-blue); border-color:var(--electric-blue);
+  }
+  .kpi-tick { display:none; width:8px; height:5px; border-left:2px solid white; border-bottom:2px solid white; transform:rotate(-45deg) translateY(-1px); }
+  .kpi-card.on .kpi-tick { display:block; }
+  .kpi-target-row { display:flex; align-items:center; gap:6px; margin-top:6px; }
+  .kpi-target-label { font-size:11px; color:var(--text-muted); white-space:nowrap; }
+  .kpi-target-input { font-size:12px; padding:4px 8px; border-radius:6px; width:100%; }
+
+  @media (max-width: 640px) {
+    .site-header { padding: 0 20px; }
+    .header-center { display: none; }
+    .page { padding: 32px 20px 60px; }
+    .hero h1 { font-size: 28px; }
+    .progress-overview { grid-template-columns: repeat(5,1fr); }
+    .progress-overview .po-step:nth-child(n+6) { display: none; }
+    .field-grid-2, .field-grid-3, .role-grid, .robot-register { grid-template-columns: 1fr; }
+    .alert-table th:nth-child(2), .alert-table td:nth-child(2) { display: none; }
+  }
+
+  @media print {
+    .site-header { position: relative; box-shadow: none; border-bottom: 1px solid #ddd; }
+    .section { break-inside: avoid; box-shadow: none; }
+    .section-body { display: block !important; }
+    .complete-btn, .progress-overview { display: none; }
+    .hero-orb { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="site-header">
+  <a class="logo" href="#">
+    <!-- Circuit-brain logomark, hand-drawn SVG approximation in brand gradient -->
+    <svg class="logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lg1" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#0081FF"/>
+          <stop offset="100%" stop-color="#A52AE1"/>
+        </linearGradient>
+      </defs>
+      <!-- Left hemisphere -->
+      <path d="M16 4C10.5 4 6 8.5 6 14c0 2.2.7 4.2 1.9 5.8L7 22l2.5-.5c1.2.8 2.7 1.3 4.3 1.4" stroke="url(#lg1)" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+      <!-- Right hemisphere -->
+      <path d="M16 4c5.5 0 10 4.5 10 10 0 2.2-.7 4.2-1.9 5.8L25 22l-2.5-.5c-1.2.8-2.7 1.3-4.3 1.4" stroke="url(#lg1)" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+      <!-- Center line -->
+      <line x1="16" y1="4" x2="16" y2="23" stroke="url(#lg1)" stroke-width="1.2" stroke-linecap="round"/>
+      <!-- Circuit nodes left -->
+      <circle cx="9.5" cy="12" r="1.2" fill="url(#lg1)"/>
+      <circle cx="8" cy="17" r="1" fill="url(#lg1)"/>
+      <line x1="9.5" y1="12" x2="8" y2="17" stroke="url(#lg1)" stroke-width="0.9"/>
+      <line x1="9.5" y1="12" x2="13" y2="12" stroke="url(#lg1)" stroke-width="0.9"/>
+      <!-- Circuit nodes right -->
+      <circle cx="22.5" cy="12" r="1.2" fill="url(#lg1)"/>
+      <circle cx="24" cy="17" r="1" fill="url(#lg1)"/>
+      <line x1="22.5" y1="12" x2="24" y2="17" stroke="url(#lg1)" stroke-width="0.9"/>
+      <line x1="22.5" y1="12" x2="19" y2="12" stroke="url(#lg1)" stroke-width="0.9"/>
+      <!-- Bottom connectors -->
+      <circle cx="13" cy="12" r="1" fill="url(#lg1)"/>
+      <circle cx="19" cy="12" r="1" fill="url(#lg1)"/>
+      <line x1="13" y1="12" x2="13" y2="18" stroke="url(#lg1)" stroke-width="0.9"/>
+      <line x1="19" y1="12" x2="19" y2="18" stroke="url(#lg1)" stroke-width="0.9"/>
+      <line x1="13" y1="18" x2="16" y2="22" stroke="url(#lg1)" stroke-width="0.9"/>
+      <line x1="19" y1="18" x2="16" y2="22" stroke="url(#lg1)" stroke-width="0.9"/>
+      <circle cx="16" cy="22" r="1.3" fill="url(#lg1)"/>
+      <!-- Top node -->
+      <circle cx="16" cy="4" r="1.5" fill="url(#lg1)"/>
+    </svg>
+    <span class="logo-wordmark">MBody AI</span>
+  </a>
+
+  <div class="header-center">Orchestrator · Client Onboarding</div>
+
+  <div class="header-right">
+    <span class="progress-label" id="prog-label">0 / 9</span>
+    <div class="hp-track"><div class="hp-fill" id="hp-fill"></div></div>
+    <span class="hp-pct" id="hp-pct">0%</span>
+  </div>
+</header>
+
+<!-- ── PAGE ── -->
+<main class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-orb orb1"></div>
+    <div class="hero-orb orb2"></div>
+    <div class="hero-eyebrow">
+      <span class="hero-eyebrow-dot"></span>
+      Robot deployment · reporting setup
+    </div>
+    <h1>Client onboarding<br/><span class="grad">checklist</span></h1>
+    <p class="hero-sub">Capture ROI targets, KPIs, validate the ingested robot fleet and locations, confirm contacts, reporting roles, alert routing, Field Service Management & Work Order Configuration, system integrations, and time zone preferences before go-live.</p>
+  </div>
+
+  <!-- PROGRESS DOTS -->
+  <div class="progress-overview" id="progress-dots"></div>
+
+  <!-- SECTIONS -->
+  <div id="sections-container"></div>
+
+</main>
+
+<footer class="footer">
+  <strong>MBody AI</strong> &nbsp;·&nbsp; Orchestrator client onboarding &nbsp;·&nbsp; Confidential
+</footer>
+
+<script>
+const SECTIONS=[
+{id:"roi",title:"ROI targets",sub:"Baseline costs & outcome goals",
+ desc:"Establish the client's baseline costs and target outcomes to calibrate Orchestrator reporting benchmarks across the robot deployment.",
+ fields:[
+   {l:"Primary ROI objective",t:"ta",p:"e.g. Reduce manual cleaning labour cost by 30%, increase hygiene consistency across all floors"},
+   {l:"Baseline annual cost of manual operations replaced (£)",t:"in",p:"e.g. 480,000"},
+   {l:"Target cost reduction",t:"in",p:"e.g. 28%"},
+   {l:"Target payback period",t:"in",p:"e.g. 18 months"},
+   {l:"Non-financial ROI goals",t:"ta",p:"e.g. Improved audit scores, reduced staff injury, 24/7 coverage without shift premium"},
+   {l:"How ROI will be measured & reported",t:"ta",p:"e.g. Monthly labour hour comparison, hygiene audit pass rate, downtime hours avoided"},
+   {l:"Target sq ft cleaned per robot per day",t:"in",p:"e.g. 18,000 ft² / robot / day"},
+   {l:"Target utilization hours per robot per day",t:"in",p:"e.g. 6.5 hrs / robot / day"},
+ ],
+ checks:[
+   {t:"Baseline labour / operational cost data provided"},
+   {t:"ROI targets agreed with client stakeholders"},
+   {t:"Measurement methodology documented"},
+   {t:"Review cadence agreed (monthly / quarterly)",h:"Confirm who owns ROI review meetings"},
+ ]},
+
+{id:"kpis",title:"KPIs & performance metrics",sub:"Dashboard metric configuration",
+ desc:"Select the KPIs to display on fleet-wide and per-location dashboards, and set target thresholds for each. These will drive Orchestrator alerts and reporting benchmarks.",
+ kpis:[
+   {id:"fleet-subloc-roi",name:"Fleet and Sub-Location ROI",meta:"Derived"},
+   {id:"total-area",name:"Total Area Cleaned",meta:"Direct"},
+   {id:"avg-area-per-robot-day",name:"Avg Area Cleaned by Robot per Day",meta:"Derived"},
+   {id:"avg-cleaning-time-per-robot-day",name:"Avg Cleaning Time by Robot per Day",meta:"Derived"},
+   {id:"robot-cost-per-hour",name:"Robot Cost per Hour",meta:"Derived"},
+ ],
+ fields:[
+   {l:"Top headline KPI (shown prominently on dashboard)",t:"in",p:"e.g. Avg Coverage — the single most important metric for this client"},
+   {l:"KPI reporting frequency",t:"in",p:"e.g. Real-time dashboard + daily digest + weekly summary"},
+   {l:"Custom KPI or formula required?",t:"ta",p:"e.g. Hygiene score = (coverage % × task completion %) weighted by floor priority"},
+ ],
+ checks:[
+   {t:"KPI selection confirmed with client stakeholders"},
+   {t:"Targets and thresholds set per KPI"},
+   {t:"Top headline KPI agreed and configured in Orchestrator"},
+   {t:"Benchmark baseline data loaded for trend comparison"},
+   {t:"Custom formula documented and tested (if applicable)"},
+ ]},
+
+{id:"fleet",title:"Validate robot fleet & locations",sub:"Confirm ingested data is accurate",
+ desc:"Robot and location data has already been ingested into Orchestrator. This section is to validate that all records are correct, complete, and ready for reporting — confirm robot assignments, site details, schedules, and connectivity before go-live.",
+ fields:[
+   {l:"Confirm total robots shown in Orchestrator",t:"in",p:"Expected count — e.g. 14. Flag any missing or duplicate entries."},
+   {l:"Confirm robot models / types are correct",t:"in",p:"e.g. R1 scrubber ×8, R2 UV ×6 — note any mismatches"},
+   {l:"Confirm number of sites / locations shown",t:"in",p:"e.g. 5 sites — flag any missing locations"},
+   {l:"Confirm floors / zones are mapped correctly per site",t:"ta",p:"Walk through each site — note any zones missing, mislabelled, or incorrectly assigned"},
+   {l:"Confirm Location/Sub-Location Groupings for Reporting Purposes",t:"ta",p:"e.g. Site A → Floors 1–3 grouped as 'North Wing'; Sub-locations grouped by department, zone, or building. Flag any groupings that need to change before go-live."},
+   {l:"Amendments or corrections required",t:"ta",p:"List any records that need updating before go-live"},
+ ],
+ robotFields:[{l:"Robot ID / serial"},{l:"Correct? (Y/N)"},{l:"Amendment needed"}],
+ checks:[
+   {t:"All robot records reviewed — IDs, models, serials correct",h:"Cross-reference against physical asset list"},
+   {t:"All site and location names confirmed accurate"},
+   {t:"Floor / zone mapping verified against site floor plans"},
+   {t:"Robot-to-location assignments confirmed correct"},
+   {t:"Geofences and no-go zones verified per site"},
+   {t:"Location / sub-location groupings confirmed for reporting purposes"},
+   {t:"Network connectivity confirmed live at each site"},
+   {t:"Firmware versions verified and up to date"},
+   {t:"All amendments corrected in Orchestrator before go-live"},
+ ]},
+
+{id:"contacts",title:"Contacts by location & role",sub:"Site and fleet-level contacts",
+ desc:"Record who is responsible at each level so reports and alerts reach the right person every time.",
+ roleCards:[
+   {role:"Executive sponsor / owner",scope:"fleet",sl:"Fleet-wide",p:"Name, email, phone"},
+   {role:"Operations director",scope:"fleet",sl:"Fleet-wide",p:"Name, email, phone"},
+   {role:"Robot programme manager",scope:"fleet",sl:"Fleet-wide",p:"Name, email, phone"},
+   {role:"Finance & reporting contact",scope:"fleet",sl:"Fleet-wide",p:"Name, email, phone"},
+   {role:"IT / network contact",scope:"fleet",sl:"Fleet-wide",p:"Name, email, phone"},
+   {role:"Site manager (per location)",scope:"site",sl:"Site-specific",p:"Name, site, email, phone"},
+   {role:"Cleaning / ops supervisor",scope:"site",sl:"Site-specific",p:"Name, site, email, phone"},
+   {role:"Health & safety officer",scope:"site",sl:"Site-specific",p:"Name, site, email"},
+   {role:"First responder — robot incidents",scope:"site",sl:"Site-specific",p:"Name, site, mobile (24/7)"},
+   {role:"MBody AI technical account manager",scope:"mbody",sl:"MBody AI",p:"Name, email, direct line"},
+   {role:"Billing / AR contact — invoices & payment",scope:"fleet",sl:"Fleet-wide",p:"Name, email, phone — receives all invoices"},
+   {role:"Client PO approver (chargeable work)",scope:"fleet",sl:"Fleet-wide",p:"Name, email — must approve Break/Fix estimates before work begins"},
+   {role:"Client feedback & CSAT contact",scope:"site",sl:"Site-specific",p:"Name, email — receives post-WO service rating requests"},
+   {role:"Defective parts collection contact",scope:"site",sl:"Site-specific",p:"Name, site, email — coordinates OEM defective part handover"},
+ ],
+ checks:[
+   {t:"All site contacts collected and verified"},
+   {t:"24/7 on-call contact confirmed per site"},
+   {t:"Escalation path documented (site → ops → exec)"},
+   {t:"Billing / AR contact confirmed and loaded into finance system"},
+   {t:"Client PO approver confirmed for Break/Fix work"},
+   {t:"Contact list uploaded to Orchestrator"},
+   {t:"GDPR / data sharing consent obtained"},
+ ]},
+
+{id:"roles",title:"Reporting roles & access",sub:"Access tiers and permissions",
+ desc:"Define who receives fleet-wide vs site-specific reports and configure their access tier in Orchestrator.",
+ fields:[
+   {l:"Fleet-wide report recipients",t:"ta",p:"Names / roles who see all-robot, all-site data"},
+   {l:"Site-Specific / Sub-Location report recipients",t:"ta",p:"Roles that see only their own site or sub-location data"},
+   {l:"Who can amend robot schedules / settings?",t:"ta",p:"e.g. Programme Manager (fleet-wide), Site Manager (own site only)"},
+   {l:"Login method",t:"in",p:"e.g. SSO via Azure AD, individual email login"},
+ ],
+ checks:[
+   {t:"Fleet-wide admin users provisioned"},
+   {t:"Site-level users provisioned with correct data scope"},
+   {t:"Role-based dashboard views tested per access tier"},
+   {t:"Client admin user(s) trained on Orchestrator"},
+   {t:"SSO / authentication method configured and tested"},
+   {t:"Report sharing permissions confirmed"},
+ ]},
+
+{id:"alerts",title:"Alert configuration & routing",sub:"Priority levels and recipients",
+ desc:"Configure which robot events trigger alerts, at what priority, and who gets notified by site, role, and channel.",
+ matrix:[
+   {p:"Critical",pc:"p-critical",ex:"Robot collision / safety stop, e-stop, fire alarm trigger, full connectivity loss, defect confirmed"},
+   {p:"High",pc:"p-high",ex:"Robot stuck > 10 min, battery failure mid-task, no-go zone breach, coverage < 70%, OEM approval overdue > 4 hrs"},
+   {p:"Medium",pc:"p-medium",ex:"Low battery not docking, consumable % below threshold, customer approval pending > 24 hrs"},
+   {p:"Low",pc:"p-low",ex:"PM due (14-day cycle), firmware update available, daily coverage below target"},
+ ],
+ fields:[
+   {l:"Alert delivery method",t:"in",p:"e.g. Push notification (app), email, SMS for critical only"},
+   {l:"Out-of-hours critical alert contacts",t:"ta",p:"Who receives critical alerts when site is unstaffed? Include mobile numbers."},
+   {l:"Alert suppression / quiet hours",t:"in",p:"e.g. Suppress Low / Medium 22:00–06:00; Critical always on"},
+   {l:"Site-specific alert overrides",t:"ta",p:"e.g. Hospital site — all alerts silent mode with app-only push"},
+   {l:"Break/Fix customer approval alert recipient",t:"in",p:"Who receives the cost estimate notification requiring approval before chargeable work starts?"},
+ ],
+ checks:[
+   {t:"All priority levels mapped to named recipients per site"},
+   {t:"Critical alert escalation contacts set (24/7)"},
+   {t:"Delivery channels configured and tested in Orchestrator"},
+   {t:"Test alert sent and acknowledged at each priority level"},
+   {t:"Quiet hours / suppression rules confirmed"},
+   {t:"Site-specific overrides documented and applied"},
+   {t:"Break/Fix approval alert recipient confirmed and tested"},
+ ]},
+
+{id:"integrations",title:"Client systems integrations",sub:"SSO, task management, facilities & more",
+ desc:"Document every third-party system Orchestrator needs to connect with — authentication, task management, facilities, and any other client-requested platforms.",
+ integrations:[
+   {id:"sso",badge:"SSO / Identity",bc:"ib-sso",
+    desc:"Identity provider configuration for Orchestrator user authentication.",
+    fields:[
+      {l:"Identity provider (IdP)",t:"in",p:"e.g. Azure Active Directory, Okta, Google Workspace, ADFS"},
+      {l:"SSO protocol",t:"in",p:"e.g. SAML 2.0, OpenID Connect (OIDC), OAuth 2.0"},
+      {l:"Tenant ID / domain",t:"in",p:"e.g. contoso.onmicrosoft.com"},
+      {l:"User provisioning method",t:"in",p:"e.g. Manual invite, SCIM auto-provisioning, JIT"},
+      {l:"Group / role mapping",t:"ta",p:"How do IdP groups map to Orchestrator roles?"},
+      {l:"IT contact for SSO setup",t:"in",p:"Name, email, phone"},
+    ],
+    checks:[
+      {t:"IdP metadata / federation XML provided to MBody AI"},
+      {t:"Orchestrator SAML / OIDC app registered in client IdP"},
+      {t:"Group-to-role mapping documented and tested"},
+      {t:"Test user login confirmed end-to-end"},
+      {t:"SCIM provisioning tested (if applicable)"},
+      {t:"MFA policy confirmed and compatible"},
+    ]},
+   {id:"task",badge:"Task management",bc:"ib-task",
+    desc:"Integration with Client Task or Work Order Management Systems.",
+    fields:[
+      {l:"Task / CAFM / CMMS platform",t:"in",p:"e.g. ServiceNow, Planon, Maximo, Jira Service Management"},
+      {l:"Integration method",t:"in",p:"e.g. REST API, webhook, email-to-ticket, CSV export"},
+      {l:"API endpoint / base URL",t:"in",p:"e.g. https://client.service-now.com/api/..."},
+      {l:"Authentication method",t:"in",p:"e.g. API key, OAuth 2.0 client credentials"},
+      {l:"Which robot events create tasks?",t:"ta",p:"e.g. Maintenance alert → work order; stuck robot → incident ticket"},
+      {l:"Task priority mapping",t:"ta",p:"e.g. Orchestrator Critical → P1; High → P2"},
+      {l:"Task assignee / queue routing",t:"ta",p:"e.g. All robot tasks → 'Facilities Tech' queue at relevant site"},
+      {l:"Completion status sync back to Orchestrator?",t:"in",p:"e.g. Yes — closed tasks update robot maintenance log"},
+    ],
+    checks:[
+      {t:"Task platform API credentials / webhook URL provided"},
+      {t:"Event-to-task mapping documented and agreed"},
+      {t:"Priority mapping tested end-to-end"},
+      {t:"Task routing to correct site queue verified"},
+      {t:"Completion status sync tested (if bidirectional)"},
+    ]},
+   {id:"facilities",badge:"Facilities Management Systems",bc:"ib-fac",
+    desc:"Integration with Elevators and Access Areas.",
+    fields:[
+      {l:"Elevator system / vendor",t:"in",p:"e.g. KONE, Otis, Schindler — model and integration capability"},
+      {l:"Access control / door system",t:"in",p:"e.g. Genetec, Lenel, HID, Brivo"},
+      {l:"Integration method",t:"in",p:"e.g. REST API, BACnet, vendor SDK, cloud webhook"},
+      {l:"Authentication method",t:"in",p:"e.g. API key, OAuth 2.0, certificate-based"},
+      {l:"Floors / zones requiring elevator access",t:"ta",p:"List sites and floors where robots need elevator integration"},
+      {l:"Doors / restricted areas requiring access",t:"ta",p:"List doors, gates, or zones robots need to traverse"},
+      {l:"Failover behaviour",t:"in",p:"e.g. If elevator API fails, robot waits at landing and alerts site manager"},
+      {l:"Facilities / building services contact",t:"in",p:"Name, email, phone — owns the elevator / access system"},
+    ],
+    checks:[
+      {t:"Elevator vendor and integration capability confirmed"},
+      {t:"Access control system and integration method confirmed"},
+      {t:"API credentials / certificates provided"},
+      {t:"Floors and zones requiring integration mapped per site"},
+      {t:"Test ride / door-open sequence verified end-to-end"},
+      {t:"Failover behaviour configured and tested"},
+    ]},
+   {id:"other",badge:"Other integrations",bc:"ib-other",
+    desc:"Client Requested Integrations.",
+    fields:[
+      {l:"Additional platform(s)",t:"in",p:"e.g. Power BI, Tableau, BACnet BMS, Genetec, Teams, Slack"},
+      {l:"Integration purpose",t:"ta",p:"What data flows where, and why?"},
+      {l:"Integration method",t:"in",p:"e.g. API, webhook, embedded dashboard, data feed"},
+      {l:"Technical contact for each",t:"ta",p:"Name, system, email"},
+    ],
+    checks:[
+      {t:"Additional integrations scoped and prioritised"},
+      {t:"Technical contacts identified per system"},
+      {t:"Integration requirements added to project plan"},
+    ]},
+ ],
+ checks:[
+   {t:"All required integrations identified and scoped"},
+   {t:"Integration owners confirmed on client side"},
+   {t:"Security / InfoSec review completed for each integration"},
+   {t:"Data sharing agreements / DPA addendums signed"},
+   {t:"Full integration test completed in staging environment"},
+   {t:"Go-live sign-off obtained from client IT"},
+ ]},
+
+{id:"fsm",title:"Field Service Management & Work Order Configuration",sub:"Service, SLA, approval & warranty setup",
+ desc:"Configure how work orders are created, assessed, approved, and closed for robots at this client's sites. These settings govern SLA behaviour, billing classification, customer approval workflows, and warranty alerting in the FSM.",
+ fields:[
+   {l:"Client SLA tier",t:"in",p:"e.g. P1 Critical: 2hr response / 8hr resolution · P2 High: 4hr / 24hr · P3 Medium: 8hr / 48hr — confirm agreed SLA tier per contract"},
+   {l:"SLA service credit rate",t:"in",p:"Standard £70/hr/robot for downtime exceeding resolution SLA — confirm if client has a negotiated rate"},
+   {l:"Break/Fix approval method",t:"in",p:"How does the client approve chargeable work estimates before work begins? e.g. Email sign-off, client portal, digital signature, verbal + email follow-up"},
+   {l:"Break/Fix approval contact & turnaround expectation",t:"in",p:"Name / role who approves and target response time — default approval window aligns to Resolution SLA"},
+   {l:"Client portal access for WO visibility?",t:"in",p:"Does the client want access to view live WO status, service history, and open estimates via the client portal?"},
+   {l:"WO service report delivery",t:"ta",p:"Who receives the automated service report on WO close? e.g. Site Manager + Ops Director. PM completion reports go to Property Operator — confirm recipient."},
+   {l:"Client feedback / CSAT opt-in",t:"in",p:"Confirm client opts in to post-WO service rating requests (Standard Fault, PM, Equipment Replacement, Damage WOs). Ratings ≤ 2 auto-alert hub manager."},
+   {l:"Damage classification awareness",t:"ta",p:"Confirm client understands the three damage types that affect billing: Employee Damage (client-chargeable), Guest Damage (client-chargeable), Third-Party Damage. Who on client side verifies damage type?"},
+   {l:"PM schedule recurrence",t:"in",p:"Standard PM cycle is every 14 days per robot — confirm if client requires a different cadence or PM scope"},
+   {l:"PM completion report recipient",t:"in",p:"Who receives the written PM completion report? e.g. Property Operator, Facilities Manager, H&S Officer"},
+   {l:"Defective parts handover process",t:"ta",p:"For warranty and damage WOs, replaced defective parts are retained for Cenobot OEM collection. Who is the client-side contact for coordinating part handover? Parts not collected within 30 days are flagged to hub manager."},
+   {l:"New robot commissioning contact",t:"in",p:"Who on the client side is present for new robot commissioning WOs? Name, role, site"},
+ ],
+ checks:[
+   {t:"SLA tier confirmed and matches signed contract"},
+   {t:"SLA service credit rate confirmed (£70/hr/robot or negotiated rate)"},
+   {t:"Break/Fix approval method and contact documented"},
+   {t:"Client portal access provisioned (if required)"},
+   {t:"WO service report recipients set per site in Orchestrator"},
+   {t:"PM completion report recipient confirmed"},
+   {t:"Client feedback / CSAT requests enabled and tested"},
+   {t:"Damage classification process explained and client contact confirmed"},
+   {t:"PM 14-day recurrence schedule configured per robot"},
+   {t:"Defective parts handover contact confirmed per site"},
+   {t:"New robot commissioning contact confirmed"},
+ ]},
+
+{id:"insight",title:"Location insight reports",sub:"Per-site report configuration",
+ desc:"Select the report components and KPIs to include in each location insight report. Confirm targets, recipients, and cadence before go-live.",
+ components:[
+   {id:"smart-text",icon:"ST",name:"Smart Text",desc:"AI-generated narrative summary"},
+   {id:"kpi-grid",icon:"KG",name:"KPI Grid",desc:"Key metrics with trend indicators"},
+   {id:"area-day",icon:"AD",name:"Area by Day",desc:"Daily area cleaned over time"},
+   {id:"breakeven",icon:"BT",name:"Breakeven Trend",desc:"ROI trend over time"},
+   {id:"area-location",icon:"AL",name:"Area by Location",desc:"Compare performance across locations"},
+   {id:"problem-areas",icon:"PA",name:"Problem Areas",desc:"AI-identified issues and anomalies"},
+   {id:"forecast",icon:"FC",name:"Forecast",desc:"Predictive outlook for robot performance"},
+   {id:"consumables",icon:"CO",name:"Consumables",desc:"Consumables status and usage"},
+   {id:"key-takeaways",icon:"KT",name:"Key Takeaways",desc:"AI synthesis of top insights"},
+   {id:"time-area",icon:"TR",name:"Time & Area by Robot",desc:"Compare robot efficiency across fleet"},
+ ],
+ kpis:[
+   {id:"total-jobs",name:"Total Jobs",meta:"Direct"},
+   {id:"jobs-completed",name:"Jobs Completed",meta:"Direct"},
+   {id:"success-rate",name:"Success Rate",meta:"Derived"},
+   {id:"total-area",name:"Total Area Cleaned",meta:"Direct"},
+   {id:"total-time",name:"Total Time",meta:"Direct"},
+   {id:"productivity",name:"Productivity",meta:"Derived"},
+   {id:"avg-coverage",name:"Avg Coverage",meta:"Direct"},
+   {id:"avg-job-duration",name:"Avg Job Duration",meta:"Direct"},
+   {id:"availability",name:"Availability %",meta:"Derived"},
+   {id:"utilization",name:"Utilization %",meta:"Derived"},
+ ],
+ fields:[
+   {l:"Insight report frequency per site",t:"in",p:"e.g. Daily email + weekly PDF + monthly deep-dive"},
+   {l:"Report recipients at site level",t:"in",p:"e.g. Site Manager, Cleaning Supervisor, Area Director"},
+   {l:"Preferred report format",t:"in",p:"e.g. Email digest, in-app dashboard, exported PDF, BI data feed"},
+   {l:"Client BI / reporting tool integration",t:"in",p:"e.g. Power BI, Tableau — API or CSV feed?"},
+   {l:"Benchmarking preference",t:"ta",p:"vs other sites? vs industry benchmark? vs previous period?"},
+ ],
+ checks:[
+   {t:"Report components selected and confirmed with client"},
+   {t:"KPI targets and thresholds set per site"},
+   {t:"Per-site insight report template confirmed"},
+   {t:"Report recipients set at site level in Orchestrator"},
+   {t:"BI / data integration tested (if applicable)"},
+   {t:"First automated report sent and signed off by client"},
+ ]},
+
+{id:"timezone",title:"Time zone & reporting schedule",sub:"Delivery cadence & report scheduling",
+ desc:"Set regional time zones, business hours, and the automated report delivery schedule for every site.",
+ fields:[
+   {l:"Primary operating time zone",t:"in",p:"e.g. Pacific Time"},
+   {l:"Additional time zones (multi-region)",t:"in",p:"e.g. US/Eastern"},
+   {l:"Business hours definition",t:"in",p:"e.g. Mon–Fri 06:00–22:00, Sat 07:00–18:00"},
+   {l:"Daily report delivery time",t:"in",p:"e.g. 07:00 local — shift handover summary"},
+   {l:"Weekly report day & time",t:"in",p:"e.g. Monday 07:30 — prior week performance"},
+   {l:"Monthly report date & time",t:"in",p:"e.g. 1st of month, 08:00 — full monthly review pack"},
+ ],
+ checks:[
+   {t:"Primary time zone set in Orchestrator"},
+   {t:"Daylight saving transitions confirmed"},
+   {t:"Multi-region time offsets tested (if applicable)"},
+   {t:"Report schedule activated and delivery confirmed"},
+   {t:"Client confirmed receipt of first scheduled report"},
+ ]},
+];
+
+const PO_LABELS=["ROI","KPIs","Validate","Contacts","Roles","Alerts","Integr.","FSM","Insight","TZ"];
+let openId=null, completed=new Set(), chkState={}, intChkState={}, intStatus={};
+
+SECTIONS.forEach(s=>{
+  chkState[s.id]={};
+  if(s.checks) s.checks.forEach((_,i)=>chkState[s.id][i]=false);
+  if(s.integrations) s.integrations.forEach(ig=>{
+    intChkState[ig.id]={};
+    intStatus[ig.id]='not-required';
+    if(ig.checks) ig.checks.forEach((_,i)=>intChkState[ig.id][i]=false);
+  });
+});
+
+function updateProgress(){
+  const d=completed.size,t=SECTIONS.length,p=Math.round(d/t*100);
+  document.getElementById('hp-fill').style.width=p+'%';
+  document.getElementById('hp-pct').textContent=p+'%';
+  document.getElementById('prog-label').textContent=d+' / '+t;
+  SECTIONS.forEach(s=>{
+    const dot=document.getElementById('pod-'+s.id);
+    if(!dot) return;
+    dot.classList.remove('done','active');
+    if(completed.has(s.id)) dot.classList.add('done');
+    else if(openId===s.id) dot.classList.add('active');
+  });
+}
+
+function toggleSection(id){
+  const sec=document.getElementById('sec-'+id);
+  if(openId===id){ sec.classList.remove('open'); openId=null; }
+  else{
+    if(openId) document.getElementById('sec-'+openId).classList.remove('open');
+    sec.classList.add('open'); openId=id;
+  }
+  updateProgress();
+}
+
+function scrollTo(id){
+  const el=document.getElementById('sec-'+id);
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); setTimeout(()=>toggleSection(id),200); }
+}
+
+function toggleChk(sid,idx){
+  chkState[sid][idx]=!chkState[sid][idx];
+  document.getElementById(`ck-${sid}-${idx}`).classList.toggle('checked',chkState[sid][idx]);
+}
+
+function toggleIntChk(igid,idx){
+  intChkState[igid][idx]=!intChkState[igid][idx];
+  document.getElementById(`ick-${igid}-${idx}`).classList.toggle('checked',intChkState[igid][idx]);
+}
+
+function setIntStatus(igid,val,btn){
+  intStatus[igid]=val;
+  const blk=document.getElementById('ib-'+igid);
+  blk.querySelectorAll('.status-btn').forEach(b=>b.classList.remove('s-required','s-scope','s-no'));
+  if(val==='required') btn.classList.add('s-required');
+  else if(val==='in-scope') btn.classList.add('s-scope');
+  else btn.classList.add('s-no');
+  const body=document.getElementById('ibody-'+igid);
+  if(body) body.classList.toggle('hidden', val==='not-required');
+}
+
+function markDone(sid){
+  completed.add(sid);
+  const btn=document.getElementById('cb-'+sid);
+  btn.textContent='✓ Section complete'; btn.classList.add('done');
+  const sec=document.getElementById('sec-'+sid);
+  sec.classList.add('complete');
+  const badge=document.getElementById('badge-'+sid);
+  if(badge){ badge.textContent='Complete'; badge.classList.add('done'); }
+  const num=document.getElementById('num-'+sid);
+  if(num){ num.textContent='✓'; num.classList.add('done'); }
+  updateProgress();
+}
+
+function buildIntBlock(ig){
+  let h=`<div class="int-block" id="ib-${ig.id}">
+    <div class="int-header">
+      <span class="int-badge ${ig.bc}">${ig.badge}</span>
+      <span class="int-desc">${ig.desc}</span>
+    </div>
+    <div style="padding:12px 14px 2px">
+      <label class="field-label">Integration required?</label>
+      <div class="int-status-row">
+        <button class="status-btn" onclick="setIntStatus('${ig.id}','required',this)">Required</button>
+        <button class="status-btn" onclick="setIntStatus('${ig.id}','in-scope',this)">In scope — TBC</button>
+        <button class="status-btn s-no" onclick="setIntStatus('${ig.id}','not-required',this)">Not required</button>
+      </div>
+    </div>
+    <div class="int-body hidden" id="ibody-${ig.id}">`;
+  ig.fields.forEach(f=>{
+    h+=`<div class="field-group"><label class="field-label">${f.l}</label>`;
+    h+=f.t==='ta'?`<textarea rows="2" placeholder="${f.p}"></textarea>`:`<input type="text" placeholder="${f.p}" />`;
+    h+=`</div>`;
+  });
+  if(ig.checks&&ig.checks.length){
+    h+=`<div class="divider"></div><span class="chk-label">Integration checkpoints</span><ul class="chk-list">`;
+    ig.checks.forEach((c,i)=>{
+      h+=`<li class="chk-item" id="ick-${ig.id}-${i}" onclick="toggleIntChk('${ig.id}',${i})">
+        <div class="chk-box"><div class="chk-mark"></div></div>
+        <div class="chk-text">${c.t}</div></li>`;
+    });
+    h+=`</ul>`;
+  }
+  h+=`</div></div>`;
+  return h;
+}
+
+function buildBody(s){
+  let h=`<p class="sec-desc">${s.desc}</p>`;
+
+  if(s.components){
+    h+=`<span class="comp-label">Select report components</span><div class="comp-grid">`;
+    s.components.forEach(c=>{
+      h+=`<div class="comp-card" id="comp-${c.id}" onclick="this.classList.toggle('on')">
+        <div class="comp-icon">${c.icon}</div>
+        <div class="comp-info">
+          <div class="comp-name">${c.name}</div>
+          <div class="comp-desc">${c.desc}</div>
+        </div>
+      </div>`;
+    });
+    h+=`</div><div class="divider"></div>`;
+  }
+
+  if(s.kpis){
+    h+=`<span class="comp-label">Select KPIs &amp; set targets</span><div class="kpi-grid">`;
+    s.kpis.forEach(k=>{
+      const mc=k.meta==='Derived'?'derived':'direct';
+      h+=`<div class="kpi-card" id="kpi-${k.id}" onclick="this.classList.toggle('on')">
+        <div class="kpi-left">
+          <div class="kpi-name">${k.name}</div>
+          <span class="kpi-meta ${mc}">${k.meta}</span>
+        </div>
+        <div class="kpi-toggle"><div class="kpi-tick"></div></div>
+      </div>`;
+    });
+    h+=`</div>`;
+    h+=`<div class="field-group"><label class="field-label">KPI targets &amp; thresholds</label>
+      <textarea rows="3" placeholder="e.g. ROI < $20/hr, Avg Area Cleaned > 16,000 sq ft/robot/day, Utilization > 4 hrs/day/robot..."></textarea>
+    </div><div class="divider"></div>`;
+  }
+
+  if(s.tags){
+    h+=`<span class="tag-section-label">Select relevant metrics</span><div class="tag-grid">`;
+    s.tags.forEach(t=>h+=`<span class="tag" onclick="this.classList.toggle('on')">${t}</span>`);
+    h+=`</div><div class="divider"></div>`;
+  }
+
+  if(s.fields) s.fields.forEach(f=>{
+    h+=`<div class="field-group"><label class="field-label">${f.l}</label>`;
+    h+=f.t==='ta'?`<textarea rows="2" placeholder="${f.p}"></textarea>`:`<input type="text" placeholder="${f.p}" />`;
+    h+=`</div>`;
+  });
+
+  if(s.robotFields){
+    h+=`<div class="divider"></div><label class="field-label">Sample robot register (one row per robot)</label><div class="robot-register">`;
+    s.robotFields.forEach(rf=>h+=`<div class="reg-card"><div class="reg-label">${rf.l}</div><input type="text" placeholder="Enter..." style="margin-top:4px" /></div>`);
+    h+=`</div>`;
+  }
+
+  if(s.roleCards){
+    h+=`<div class="role-grid">`;
+    s.roleCards.forEach(rc=>{
+      h+=`<div class="role-card">
+        <div class="role-scope ${rc.scope}">${rc.sl}</div>
+        <div class="role-name">${rc.role}</div>
+        <input type="text" placeholder="${rc.p}" />
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+
+  if(s.matrix){
+    h+=`<table class="alert-table"><thead><tr>
+      <th style="width:110px">Priority</th>
+      <th>Example triggers</th>
+      <th style="width:210px">Notify — names / roles</th>
+    </tr></thead><tbody>`;
+    s.matrix.forEach(r=>{
+      h+=`<tr>
+        <td><span class="p-pill ${r.pc}"><span class="p-dot"></span>${r.p}</span></td>
+        <td class="alert-ex">${r.ex}</td>
+        <td><input type="text" placeholder="Names / roles..." /></td>
+      </tr>`;
+    });
+    h+=`</tbody></table>`;
+  }
+
+  if(s.integrations){
+    s.integrations.forEach(ig=>h+=buildIntBlock(ig));
+    h+=`<div class="divider"></div><span class="chk-label">Overall integration sign-off</span><ul class="chk-list">`;
+    s.checks.forEach((c,i)=>{
+      h+=`<li class="chk-item" id="ck-${s.id}-${i}" onclick="toggleChk('${s.id}',${i})">
+        <div class="chk-box"><div class="chk-mark"></div></div>
+        <div class="chk-text">${c.t}</div></li>`;
+    });
+    h+=`</ul>`;
+  } else if(s.checks&&s.checks.length){
+    h+=`<div class="divider"></div><span class="chk-label">Completion checkpoints</span><ul class="chk-list">`;
+    s.checks.forEach((c,i)=>{
+      h+=`<li class="chk-item" id="ck-${s.id}-${i}" onclick="toggleChk('${s.id}',${i})">
+        <div class="chk-box"><div class="chk-mark"></div></div>
+        <div class="chk-text">${c.t}${c.h?`<div class="chk-hint">${c.h}</div>`:''}</div></li>`;
+    });
+    h+=`</ul>`;
+  }
+
+  h+=`<button class="complete-btn" id="cb-${s.id}" onclick="markDone('${s.id}')">Mark section complete →</button>`;
+  return h;
+}
+
+function renderDots(){
+  const c=document.getElementById('progress-dots');
+  c.innerHTML='';
+  SECTIONS.forEach((s,i)=>{
+    const div=document.createElement('div');
+    div.className='po-step';
+    div.onclick=()=>scrollTo(s.id);
+    div.innerHTML=`<div class="po-dot" id="pod-${s.id}">${i+1}</div><div class="po-label">${PO_LABELS[i]}</div>`;
+    c.appendChild(div);
+  });
+}
+
+function renderSections(){
+  const c=document.getElementById('sections-container');
+  c.innerHTML='';
+  SECTIONS.forEach((s,i)=>{
+    const sec=document.createElement('div');
+    sec.className='section'; sec.id='sec-'+s.id;
+    sec.style.animationDelay=(i*0.04)+'s';
+    sec.innerHTML=`
+      <div class="section-header" onclick="toggleSection('${s.id}')">
+        <div class="sec-num" id="num-${s.id}">${i+1}</div>
+        <div class="sec-title-wrap">
+          <div class="sec-title">${s.title}</div>
+          <div class="sec-subtitle">${s.sub}</div>
+        </div>
+        <span class="sec-badge" id="badge-${s.id}">${s.checks?s.checks.length+' checkpoints':''}</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="section-body">${buildBody(s)}</div>`;
+    c.appendChild(sec);
+  });
+}
+
+renderDots();
+renderSections();
+updateProgress();
+</script>
+</body>
+</html>

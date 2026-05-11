@@ -1,0 +1,23 @@
+{
+  "skill_name": "mbody-ai-ui",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Build a hero section for the MBody AI homepage. It should have a headline, a subheadline explaining what MBody AI does, and two buttons — a primary CTA ('Explore Solutions') and a secondary one ('Contact'). Make it a single self-contained HTML file.",
+      "expected_output": "A dark-background HTML page with the iris gradient, Inter font, correct color tokens, white heading text, gray body text, and properly styled primary (gradient) and secondary (outline) buttons.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Create a React dashboard card component for MBody AI that shows a key metric — for example 'Active Robots: 142' with a trend indicator (+12% this week). It should feel like it belongs in an MBody AI product dashboard. Export it as a default React component.",
+      "expected_output": "A React component using Inter font, dark surface background (#111118), violet/blue accent colors, subtle lavender border, correct typography weights (semi-bold label, regular value), and gradient or accent-colored trend indicator.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Design an MBody AI pricing/features comparison table in HTML showing three tiers: Starter, Professional, and Enterprise. Each tier should have a name, price, list of features with checkmarks, and a CTA button. Style it to match MBody AI brand guidelines.",
+      "expected_output": "Dark HTML table/card layout with deep black background, card surfaces at #111118, lavender borders, Inter font, gradient primary button on the featured/middle tier, outline buttons for others, and violet/blue checkmark icons for features.",
+      "files": []
+    }
+  ]
+}
