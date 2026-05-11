@@ -6,6 +6,7 @@ import CheckpointList from '@/components/form/shared/CheckpointList'
 import SectionDivider from '@/components/form/shared/SectionDivider'
 
 import type { ConfigPhase } from '@/types'
+import { ArrowRight, Loader2 } from 'lucide-react'
 
 interface AlertsSectionProps {
   data?: Record<string, unknown>
@@ -269,34 +270,66 @@ export default function AlertsSection({ data = {}, onSave, onAutoSave, isSaving,
         }}
       />
 
-      <button
-        onClick={() => handleSave(false)}
-        disabled={isSaving}
-        style={{
-          width: '100%', padding: '10px', borderRadius: '8px',
-          fontSize: '12px', fontWeight: 600, letterSpacing: '0.05em',
-          textTransform: 'uppercase', background: 'transparent',
-          border: 'var(--border-subtle)', color: 'var(--text-muted)',
-          cursor: isSaving ? 'not-allowed' : 'pointer', marginBottom: '8px',
-        }}
-      >
-        {isSaving ? 'Saving...' : 'Save draft'}
-      </button>
+{/* Save draft */}
+<button
+  onClick={() => handleSave(false)}
+  disabled={isSaving}
+  className={`
+    w-full
+    py-2.5
+    rounded-2xl
+    text-sm
+    font-semibold
+    border
+    border-slate-500
+    text-heading
+    bg-transparent
+    transition-all
+    mb-2
+    flex
+    items-center
+    justify-center
+    gap-2
+    ${isSaving ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:border-slate-400"}
+  `}
+>
+  {isSaving ? "Saving..." : "Save draft"}
+</button>
 
-      <button
-        onClick={() => handleSave(true)}
-        disabled={isSaving}
-        style={{
-          width: '100%', padding: '12px', borderRadius: '8px',
-          fontSize: '13px', fontWeight: 600, color: 'white',
-          background: 'linear-gradient(135deg, #A52AE1, #3999FE)',
-          border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer',
-          opacity: isSaving ? 0.7 : 1,
-          boxShadow: '0 2px 12px rgba(0,129,255,0.25)',
-        }}
-      >
-        {isSaving ? 'Saving...' : 'Save & mark complete →'}
-      </button>
+{/* Save & Mark Complete */}
+<button
+  onClick={() => handleSave(true)}
+  disabled={isSaving}
+  className={`
+    w-full
+    py-3
+    rounded-2xl
+    text-sm
+    font-semibold
+    flex
+    items-center
+    justify-center
+    gap-2
+    transition-all
+    text-white
+    shadow-md
+    bg-violet-500
+    hover:bg-violet-700
+    ${isSaving ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}
+  `}
+>
+  {isSaving ? (
+    <>
+      <Loader2 className="h-4 w-4 animate-spin" />
+      Saving...
+    </>
+  ) : (
+    <>
+      Save & mark complete
+      <ArrowRight className="h-4 w-4" />
+    </>
+  )}
+</button>
     </div>
   )
 }

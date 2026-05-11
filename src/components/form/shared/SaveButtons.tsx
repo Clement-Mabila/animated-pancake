@@ -1,6 +1,7 @@
 'use client'
 
 import { useToast } from '@/context/ToastContext'
+import { Loader2, Check, ArrowRight } from 'lucide-react'
 
 interface SaveButtonsProps {
   onSaveDraft: () => void
@@ -28,39 +29,39 @@ export default function SaveButtons({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+    <div className="flex flex-col gap-2 mt-1">
+
       {/* Save draft */}
       {!isComplete && (
         <button
           onClick={handleDraft}
           disabled={isSaving}
-          style={{
-            width: '100%',
-            padding: '10px',
-            borderRadius: '8px',
-            fontSize: '12px',
-            fontWeight: 600,
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-            background: 'transparent',
-            border: 'var(--border-subtle)',
-            color: 'var(--text-muted)',
-            cursor: isSaving ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s',
-            fontFamily: 'var(--font-family)',
-          }}
-          onMouseEnter={e => {
-            if (!isSaving) {
-              e.currentTarget.style.borderColor = 'rgba(146,140,227,0.4)'
-              e.currentTarget.style.color = 'var(--text-body)'
-            }
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.borderColor = ''
-            e.currentTarget.style.color = 'var(--text-muted)'
-          }}
+          className={`
+            w-full
+            py-2.5
+            rounded-2xl
+            text-sm
+            font-semibold
+            border
+            border-slate-500
+            text-heading
+            bg-transparent
+            transition-all
+            flex
+            items-center
+            justify-center
+            gap-2
+            ${isSaving ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:border-slate-400"}
+          `}
         >
-          {isSaving ? 'Saving...' : 'Save draft'}
+          {isSaving ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save draft"
+          )}
         </button>
       )}
 
@@ -68,44 +69,44 @@ export default function SaveButtons({
       <button
         onClick={handleComplete}
         disabled={isSaving || isComplete}
-        style={{
-          width: '100%',
-          padding: '12px',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontWeight: 600,
-          fontFamily: 'var(--font-family)',
-          transition: 'all 0.2s',
-          ...(isComplete
-            ? {
-                background: 'rgba(0,129,255,0.08)',
-                border: '1px solid rgba(0,129,255,0.25)',
-                color: 'var(--electric-blue)',
-                cursor: 'default',
-              }
-            : {
-                background: 'linear-gradient(135deg, #A52AE1, #3999FE)',
-                border: 'none',
-                color: 'white',
-                cursor: isSaving ? 'not-allowed' : 'pointer',
-                opacity: isSaving ? 0.7 : 1,
-                boxShadow: '0 2px 12px rgba(0,129,255,0.25)',
-              }
-          ),
-        }}
-        onMouseEnter={e => {
-          if (!isSaving && !isComplete) e.currentTarget.style.opacity = '0.88'
-        }}
-        onMouseLeave={e => {
-          if (!isSaving && !isComplete) e.currentTarget.style.opacity = '1'
-        }}
+        className={`
+          w-full
+          py-3
+          rounded-2xl
+          text-sm
+          font-semibold
+          flex
+          items-center
+          justify-center
+          gap-2
+          transition-all
+          font-sans
+          ${
+            isComplete
+              ? "bg-blue-50 border border-blue-200 text-blue-600 cursor-default"
+              : "text-white shadow-md bg-violet-500 hover:bg-violet-700"
+          }
+          ${isSaving ? "opacity-70 cursor-not-allowed" : ""}
+        `}
       >
-        {isSaving
-          ? 'Saving...'
-          : isComplete
-          ? '✓ Section complete'
-          : 'Mark section complete →'}
+        {isSaving ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Saving...
+          </>
+        ) : isComplete ? (
+          <>
+            <Check className="h-4 w-4" />
+            Section complete
+          </>
+        ) : (
+          <>
+            Mark section complete
+            <ArrowRight className="h-4 w-4" />
+          </>
+        )}
       </button>
+
     </div>
   )
 }

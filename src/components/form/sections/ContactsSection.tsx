@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import CheckpointList from '@/components/form/shared/CheckpointList'
 import SectionDivider from '@/components/form/shared/SectionDivider'
 import PersonCard from './contacts/PersonCard'
-import { User, Menu, Info } from "lucide-react";
+import { User, Menu, Info, ArrowRight, Loader2 } from "lucide-react";
 import PersonModal from './contacts/PersonModal'
 import UnassignedRolesWarning from './contacts/UnassignedRolesWarning'
 import {
@@ -374,51 +374,90 @@ export default function ContactsSection({
         onChange={handleCheckpoint}
       />
 
-      {/* ── Save draft ── */}
-      <button
-        onClick={() => handleSave(false)}
-        disabled={isSaving}
-        style={{
-          width: '100%', padding: '10px', borderRadius: '8px',
-          fontSize: '12px', fontWeight: 600, letterSpacing: '0.05em',
-          textTransform: 'uppercase', background: 'transparent',
-          border: 'var(--border-subtle)', color: 'var(--text-muted)',
-          cursor: isSaving ? 'not-allowed' : 'pointer', marginBottom: '8px',
-        }}
-      >
-        {isSaving ? 'Saving...' : 'Save draft'}
-      </button>
+      {/* ── Save actions ── */}
+<div className="mt-4 flex flex-col">
 
-      {/* ── Save & complete ── */}
-      <div style={{ position: 'relative' }}>
-        <button
-          onClick={() => handleSave(true)}
-          disabled={isSaving || !canComplete}
-          title={
-            !canComplete
-              ? `Assign ${unassignedRequired.map(r => r.label).join(', ')} before completing`
-              : undefined
-          }
-          style={{
-            width: '100%', padding: '12px', borderRadius: '8px',
-            fontSize: '13px', fontWeight: 600, color: 'white',
-            background: canComplete
-              ? 'linear-gradient(135deg, #A52AE1, #3999FE)'
-              : 'rgba(146,140,227,0.25)',
-            border: 'none',
-            cursor: (isSaving || !canComplete) ? 'not-allowed' : 'pointer',
-            opacity: isSaving ? 0.7 : 1,
-            boxShadow: canComplete ? '0 2px 12px rgba(0,129,255,0.25)' : 'none',
-            transition: 'background 0.2s, box-shadow 0.2s',
-          }}
-        >
-          {isSaving
-            ? 'Saving...'
-            : canComplete
-            ? 'Save & mark complete →'
-            : `${unassignedRequired.length} required ${unassignedRequired.length === 1 ? 'role' : 'roles'} unassigned`}
-        </button>
-      </div>
+  {/* Save draft */}
+  <button
+    onClick={() => handleSave(false)}
+    disabled={isSaving}
+    className={`
+      w-full
+      py-2.5
+      rounded-2xl
+      text-sm
+      font-semibold
+      border
+      border-slate-500
+      text-heading
+      bg-transparent
+      transition-all
+      mb-2
+      flex
+      items-center
+      justify-center
+      gap-2
+      ${isSaving ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:border-slate-400"}
+    `}
+  >
+    {isSaving ? (
+      <>
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        Saving...
+      </>
+    ) : (
+      "Save draft"
+    )}
+  </button>
+
+  {/* Save & complete */}
+  <button
+    onClick={() => handleSave(true)}
+    disabled={isSaving || !canComplete}
+    title={
+      !canComplete
+        ? `Assign ${unassignedRequired.map(r => r.label).join(', ')} before completing`
+        : undefined
+    }
+    className={`
+      w-full
+      py-3
+      rounded-2xl
+      text-sm
+      font-semibold
+      flex
+      items-center
+      justify-center
+      gap-2
+      transition-all
+      text-white
+      shadow-md
+      ${
+        canComplete
+          ? "bg-violet-500 hover:bg-violet-700"
+          : "bg-violet-300 cursor-not-allowed"
+      }
+      ${isSaving ? "opacity-70 cursor-not-allowed" : ""}
+    `}
+  >
+    {isSaving ? (
+      <>
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Saving...
+      </>
+    ) : canComplete ? (
+      <>
+        Save & mark complete
+        <ArrowRight className="h-4 w-4" />
+      </>
+    ) : (
+      `${unassignedRequired.length} required ${
+        unassignedRequired.length === 1 ? "role" : "roles"
+      } unassigned`
+    )}
+  </button>
+
+</div>
 
       {/* ── Person add/edit modal ── */}
       {modalOpen && (

@@ -24,6 +24,8 @@ import {
   reorderWorkflowQuestionsAction,
   restoreWorkflowSectionAction,
   restoreWorkflowQuestionAction,
+  importSectionFromPrimaryAction,
+  importQuestionFromPrimaryAction,
 } from '@/app/admin/actions/workflow'
 import SectionModal  from './SectionModal'
 import QuestionModal from './QuestionModal'
@@ -358,15 +360,17 @@ function SortableQuestionCard({
 
 /* ── Main component ──────────────────────────────────────────── */
 interface Props {
-  templateId:       string
-  sections:         WorkflowSection[]
-  questions:        WorkflowQuestion[]
-  deletedSections:  WorkflowSection[]
-  deletedQuestions: WorkflowQuestion[]
-  readOnly:         boolean
+  templateId:        string
+  sections:          WorkflowSection[]
+  questions:         WorkflowQuestion[]
+  deletedSections:   WorkflowSection[]
+  deletedQuestions:  WorkflowQuestion[]
+  readOnly:          boolean
+  primarySections?:  WorkflowSection[]
+  primaryQuestions?: WorkflowQuestion[]
 }
 
-export default function SectionsTab({ templateId, sections: initSections, questions: initQuestions, deletedSections, deletedQuestions, readOnly }: Props) {
+export default function SectionsTab({ templateId, sections: initSections, questions: initQuestions, deletedSections, deletedQuestions, readOnly, primarySections = [], primaryQuestions = [] }: Props) {
   const router = useRouter()
 
   const [sections,         setSections]         = useState<WorkflowSection[]>(initSections)
@@ -396,6 +400,11 @@ export default function SectionsTab({ templateId, sections: initSections, questi
   const [trashModal,       setTrashModal]       = useState<'sections' | 'questions' | null>(null)
   const [trashSectionIds,  setTrashSectionIds]  = useState<Set<string>>(new Set())
   const [trashQuestionIds, setTrashQuestionIds] = useState<Set<string>>(new Set())
+
+  const [addSectionPickerOpen, setAddSectionPickerOpen] = useState(false)
+  const [addFieldPickerOpen,   setAddFieldPickerOpen]   = useState(false)
+  const [importingSection,     setImportingSection]     = useState<string | null>(null)
+  const [importingQuestion,    setImportingQuestion]    = useState<string | null>(null)
 
   type HistoryEntry = { undo: () => Promise<void>; redo: () => Promise<void> }
   const historyRef    = useRef<HistoryEntry[]>([])
@@ -728,6 +737,36 @@ export default function SectionsTab({ templateId, sections: initSections, questi
     setTrashQuestionIds(new Set())
   }
 
+  /* ── Primary-template picker helpers ─────────────────────────── */
+  const missingSections = primarySections.filter(ps => !sections.some(s => s.slug === ps.slug))
+
+  const missingQuestionsForSection = primaryQuestions.filter(
+    pq => pq.section_slug === selectedSlug
+       && pq.field_key !== '__all__'
+       && !sectionQuestions.some(q => q.field_key === pq.field_key)
+  )
+
+  async function handleImportSection(ps: WorkflowSection) {
+    setImportingSection(ps.id)
+    const result = await importSectionFromPrimaryAction(ps.id, templateId)
+    setImportingSection(null)
+    if (!result.ok) { alert(`Import failed: ${result.error}`); return }
+    setSections(prev => [...prev, result.section])
+    setQuestions(prev => [...prev, ...result.questions])
+    setSelectedSlug(result.section.slug)
+    setAddSectionPickerOpen(false)
+    router.refresh()
+  }
+
+  async function handleImportQuestion(pq: WorkflowQuestion) {
+    setImportingQuestion(pq.id)
+    const result = await importQuestionFromPrimaryAction(pq.id, templateId)
+    setImportingQuestion(null)
+    if (!result.ok) { alert(`Import failed: ${result.error}`); return }
+    setQuestions(prev => [...prev, result.question])
+    router.refresh()
+  }
+
   const showSectionHandle = !readOnly && activePhase === 'all'
 
   return (
@@ -750,7 +789,7 @@ export default function SectionsTab({ templateId, sections: initSections, questi
             </div>
             {!readOnly && (
               <button
-                onClick={() => setSectionModal({ open: true, section: null })}
+                onClick={() => missingSections.length > 0 ? setAddSectionPickerOpen(true) : setSectionModal({ open: true, section: null })}
                 className="text-xs font-medium text-violet-500 hover:opacity-75 transition-opacity shrink-0 mt-0.5"
               >
                 + Add →
@@ -928,7 +967,7 @@ export default function SectionsTab({ templateId, sections: initSections, questi
                       </>
                     )}
                     <button
-                      onClick={() => setQuestionModal({ open: true, question: null })}
+                      onClick={() => missingQuestionsForSection.length > 0 ? setAddFieldPickerOpen(true) : setQuestionModal({ open: true, question: null })}
                       className="text-xs font-medium text-violet-500 hover:opacity-75 transition-opacity px-1"
                     >
                       + Add field →
@@ -965,7 +1004,7 @@ export default function SectionsTab({ templateId, sections: initSections, questi
 
                 {!readOnly && (
                   <button
-                    onClick={() => setQuestionModal({ open: true, question: null })}
+                    onClick={() => missingQuestionsForSection.length > 0 ? setAddFieldPickerOpen(true) : setQuestionModal({ open: true, question: null })}
                     className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border hover:border-electric-blue/40 hover:bg-electric-blue/5 px-4 py-3 text-xs font-medium text-muted hover:text-electric-blue transition-all duration-200"
                   >
                     <Plus size={14} /> Add field
@@ -996,6 +1035,122 @@ export default function SectionsTab({ templateId, sections: initSections, questi
           )}
         </div>
       </div>
+
+      {/* ── Add Section picker ───────────────────────────── */}
+      {addSectionPickerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setAddSectionPickerOpen(false)}>
+          <div className="relative w-full max-w-lg rounded-2xl bg-surface border border-border shadow-xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-heading">Add Section</h3>
+                <p className="text-xs text-muted mt-0.5">Create new or import from the primary template</p>
+              </div>
+              <button onClick={() => setAddSectionPickerOpen(false)} className="p-1.5 rounded-lg text-muted hover:text-heading hover:bg-elevated transition-colors">
+                <X size={14} />
+              </button>
+            </div>
+
+            <button
+              onClick={() => { setAddSectionPickerOpen(false); setSectionModal({ open: true, section: null }) }}
+              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-elevated transition-colors text-left"
+            >
+              <span className="flex items-center justify-center w-7 h-7 rounded-xl shrink-0" style={{ backgroundColor: 'rgba(146,140,227,0.15)' }}>
+                <Plus size={14} style={{ color: '#928CE3' }} />
+              </span>
+              <span className="text-sm font-medium text-heading">Create new section</span>
+            </button>
+
+            {missingSections.length > 0 && (
+              <>
+                <div className="h-px bg-border my-3" />
+                <p className="text-xs text-muted mb-2 px-1">From primary template</p>
+                <ul className="flex flex-col gap-1 max-h-72 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  {missingSections.map(ps => {
+                    const qCount = primaryQuestions.filter(pq => pq.section_slug === ps.slug && pq.field_key !== '__all__').length
+                    return (
+                      <li key={ps.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-elevated transition-colors">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: '#928CE3' }} />
+                        <span className="flex-1 text-sm font-medium text-heading truncate">{ps.title}</span>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: 'rgba(146,140,227,0.15)', color: '#928CE3' }}>
+                          {qCount} field{qCount !== 1 ? 's' : ''}
+                        </span>
+                        <button
+                          onClick={() => handleImportSection(ps)}
+                          disabled={importingSection === ps.id}
+                          className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-bright-violet/15 text-bright-violet hover:bg-bright-violet/25 transition-colors disabled:opacity-50"
+                        >
+                          {importingSection === ps.id ? '…' : '+ Add'}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Add Field picker ─────────────────────────────── */}
+      {addFieldPickerOpen && selectedSection && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setAddFieldPickerOpen(false)}>
+          <div className="relative w-full max-w-lg rounded-2xl bg-surface border border-border shadow-xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-heading">Add Field</h3>
+                <p className="text-xs text-muted mt-0.5">Create new or import from the primary template</p>
+              </div>
+              <button onClick={() => setAddFieldPickerOpen(false)} className="p-1.5 rounded-lg text-muted hover:text-heading hover:bg-elevated transition-colors">
+                <X size={14} />
+              </button>
+            </div>
+
+            <button
+              onClick={() => { setAddFieldPickerOpen(false); setQuestionModal({ open: true, question: null }) }}
+              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-elevated transition-colors text-left"
+            >
+              <span className="flex items-center justify-center w-7 h-7 rounded-xl shrink-0" style={{ backgroundColor: 'rgba(146,140,227,0.15)' }}>
+                <Plus size={14} style={{ color: '#928CE3' }} />
+              </span>
+              <span className="text-sm font-medium text-heading">Create new field</span>
+            </button>
+
+            {missingQuestionsForSection.length > 0 && (
+              <>
+                <div className="h-px bg-border my-3" />
+                <p className="text-xs text-muted mb-2 px-1">From primary template · {selectedSection.title}</p>
+                <ul className="flex flex-col gap-1.5 max-h-72 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  {missingQuestionsForSection.map(pq => {
+                    const cfg  = FIELD_TYPE_CONFIG[pq.field_type] ?? DEFAULT_FIELD_CFG
+                    const Icon = cfg.icon
+                    return (
+                      <li key={pq.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-elevated transition-colors">
+                        <span className="flex items-center justify-center w-7 h-7 rounded-xl shrink-0" style={{ backgroundColor: cfg.bg }}>
+                          <Icon size={13} strokeWidth={1.5} style={{ color: cfg.color }} />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-heading truncate">{pq.field_key}</p>
+                          {pq.label && <p className="text-[11px] text-muted truncate">{pq.label}</p>}
+                        </div>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 whitespace-nowrap" style={{ backgroundColor: cfg.bg, color: cfg.color }}>
+                          {pq.field_type}
+                        </span>
+                        <button
+                          onClick={() => handleImportQuestion(pq)}
+                          disabled={importingQuestion === pq.id}
+                          className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-bright-violet/15 text-bright-violet hover:bg-bright-violet/25 transition-colors disabled:opacity-50"
+                        >
+                          {importingQuestion === pq.id ? '…' : '+ Add'}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {sectionModal.open && (
         <SectionModal

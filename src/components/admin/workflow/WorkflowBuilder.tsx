@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   CheckCircle, Lock,
-  LayoutTemplate, AlignHorizontalJustifyStart, BadgeCheck, Columns, BrainCog,
+  LayoutTemplate, AlignHorizontalJustifyStart, BadgeCheck, Columns, BrainCog, Workflow,
 } from 'lucide-react'
 import TemplateLibrary from './TemplateLibrary'
 import SectionsTab    from './SectionsTab'
@@ -57,6 +57,13 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
     router.refresh()
   }
 
+  function handleTemplateCreatedWithPreview(id: string) {
+    setSelectedId(id)
+    setTab('sections')
+    setSplitScreen(true)
+    router.refresh()
+  }
+
   const selected = templates.find(t => t.id === selectedId)
     ?? templates.find(t => t.is_active)
     ?? templates[0]
@@ -68,6 +75,10 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
   const deletedSections = allDeletedSections.filter(s => s.template_id === selected?.id)
   const deletedQuestions = allDeletedQuestions.filter(q => q.template_id === selected?.id)
   const readOnly        = !selected?.is_draft
+
+  const primaryTemplate  = templates.find(t => t.is_active) ?? null
+  const primarySections  = allSections.filter(s => s.template_id === primaryTemplate?.id && s.template_id !== selected?.id)
+  const primaryQuestions = allQuestions.filter(q => q.template_id === primaryTemplate?.id && q.template_id !== selected?.id)
 
   if (templates.length === 0) {
     return (
@@ -162,18 +173,18 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
                 <button
                   key={id}
                   onClick={() => setTab(id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-2xl border text-xs font-medium transition-all duration-200 group ${
+                  className={`flex items-center gap-2 px-3 py-1 rounded-2xl border text-xs font-medium transition-all duration-200 group ${
                     isActive
                       ? 'bg-elevated border-soft-lavender/30 text-heading'
                       : 'bg-surface border-border text-body-text hover:bg-elevated hover:border-soft-lavender/30 hover:text-heading'
                   }`}
                 >
                   <span
-                    className="flex items-center justify-center w-5 h-5 rounded-md transition-colors shrink-0"
+                    className="flex items-center justify-center w-7 h-7 rounded-md transition-colors shrink-0"
                     style={isActive ? { backgroundColor: iconBg } : undefined}
                   >
                     <Icon
-                      size={12}
+                      size={16}
                       strokeWidth={1.5}
                       className={isActive ? '' : 'text-muted'}
                       style={isActive ? { color: iconColor } : undefined}
@@ -195,19 +206,14 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
             {tab === 'sections' && (
               <button
                 onClick={() => setSplitScreen(v => !v)}
-                className="ml-auto flex items-center gap-2 px-3.5 py-2 rounded-2xl border text-xs font-semibold transition-all duration-200"
-                style={splitScreen ? {
-                  background: 'linear-gradient(135deg,rgba(165,42,225,0.12),rgba(57,153,254,0.12))',
-                  borderColor: 'rgba(57,153,254,0.4)',
-                  color: '#3999FE',
-                } : {
-                  background: 'var(--bg-elevated)',
-                  borderColor: 'rgba(146,140,227,0.25)',
-                  color: 'var(--text-muted)',
-                }}
+                className={`ml-auto flex items-center gap-2 px-3.5 py-2 rounded-2xl border text-xs font-semibold transition-all duration-200
+                  ${splitScreen
+                    ? 'bg-violet-600 border-none text-white'
+                    : 'bg-white/5 border-purple-400/25 text-slate-400'
+                  }`}
               >
-                <Columns size={12} strokeWidth={1.6} />
-                {splitScreen ? 'Close preview' : 'Live preview'}
+                <Workflow size={16} strokeWidth={1.6} />
+                {splitScreen ? 'Close preview' : 'Live Onboarding'}
               </button>
             )}
 
@@ -231,6 +237,8 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
                     deletedSections={deletedSections}
                     deletedQuestions={deletedQuestions}
                     readOnly={readOnly}
+                    primarySections={primarySections}
+                    primaryQuestions={primaryQuestions}
                   />
                 </div>
                 <div className="w-[440px] shrink-0">
@@ -259,6 +267,8 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
                 deletedSections={deletedSections}
                 deletedQuestions={deletedQuestions}
                 readOnly={readOnly}
+                primarySections={primarySections}
+                primaryQuestions={primaryQuestions}
               />
             )
           )}
@@ -280,7 +290,10 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
             />
           )}
           {tab === 'ai' && (
-            <AITemplateTab onTemplateCreated={handleTemplateCreated} />
+            <AITemplateTab
+              onTemplateCreated={handleTemplateCreated}
+              onOpenPreview={handleTemplateCreatedWithPreview}
+            />
           )}
         </>
       )}

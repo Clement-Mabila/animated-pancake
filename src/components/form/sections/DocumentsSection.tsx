@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import CheckpointList from '@/components/form/shared/CheckpointList'
 import SectionDivider from '@/components/form/shared/SectionDivider'
+import { ArrowRight } from 'lucide-react'
 
 interface DocumentsSectionProps {
   data?:        Record<string, unknown>
@@ -280,43 +281,86 @@ export default function DocumentsSection({
         }}
       />
 
-      <button
-        onClick={() => onSave(buildPayload(statuses, notes, checked), false)}
-        disabled={isSaving}
-        style={{
-          width: '100%', padding: '10px', borderRadius: '8px',
-          fontSize: '12px', fontWeight: 600, letterSpacing: '0.05em',
-          textTransform: 'uppercase', background: 'transparent',
-          border: 'var(--border-subtle)', color: 'var(--text-muted)',
-          cursor: isSaving ? 'not-allowed' : 'pointer', marginBottom: '8px',
-        }}
-      >
-        {isSaving ? 'Saving...' : 'Save draft'}
-      </button>
+      {/* Save actions */}
+      <div className="flex flex-col">
 
-      <button
-        onClick={() => onSave(buildPayload(statuses, notes, checked), true)}
-        disabled={isSaving || receivedCount < 3}
-        title={receivedCount < 3 ? 'Mark all 3 documents as Received before completing' : undefined}
-        style={{
-          width: '100%', padding: '12px', borderRadius: '8px',
-          fontSize: '13px', fontWeight: 600, color: 'white',
-          background: receivedCount === 3 && !isSaving
-            ? 'linear-gradient(135deg, #A52AE1, #3999FE)'
-            : 'rgba(146,140,227,0.2)',
-          border: 'none',
-          cursor: isSaving || receivedCount < 3 ? 'not-allowed' : 'pointer',
-          opacity: isSaving ? 0.7 : 1,
-          boxShadow: receivedCount === 3 ? '0 2px 12px rgba(0,129,255,0.25)' : 'none',
-          transition: 'all 0.2s',
-        }}
-      >
-        {isSaving
-          ? 'Saving...'
-          : receivedCount < 3
-          ? `${3 - receivedCount} document${3 - receivedCount !== 1 ? 's' : ''} still outstanding`
-          : 'Save & mark complete →'}
-      </button>
+        {/* Save draft */}
+        <button
+          onClick={() =>
+            onSave(buildPayload(statuses, notes, checked), false)
+          }
+          disabled={isSaving}
+          className={`
+            w-full
+            py-2.5
+            rounded-2xl
+            text-sm
+            font-semibold
+            tracking-wide
+            uppercase
+            border
+            border-slate-500
+            text-slate-300
+            bg-transparent
+            transition-all
+            mb-2
+            flex
+            items-center
+            justify-center
+            gap-2
+            ${isSaving ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:border-slate-400"}
+          `}
+        >
+          {isSaving ? "Saving..." : "Save draft"}
+        </button>
+
+        {/* Save & mark complete */}
+        <button
+          onClick={() =>
+            onSave(buildPayload(statuses, notes, checked), true)
+          }
+          disabled={isSaving || receivedCount < 3}
+          title={
+            receivedCount < 3
+              ? "Mark all 3 documents as Received before completing"
+              : undefined
+          }
+          className={`
+            w-full
+            py-3
+            rounded-2xl
+            text-sm
+            font-semibold
+            flex
+            items-center
+            justify-center
+            gap-2
+            transition-all
+            text-white
+            shadow-md
+            ${
+              receivedCount === 3 && !isSaving
+                ? "bg-violet-500 hover:bg-violet-700"
+                : "bg-violet-300 cursor-not-allowed"
+            }
+            ${isSaving ? "opacity-70 cursor-not-allowed" : ""}
+          `}
+        >
+          {isSaving ? (
+            "Saving..."
+          ) : receivedCount < 3 ? (
+            `${3 - receivedCount} document${
+              3 - receivedCount !== 1 ? "s" : ""
+            } still outstanding`
+          ) : (
+            <>
+              Save & mark complete
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
+        </button>
+
+      </div>
     </div>
   )
 }

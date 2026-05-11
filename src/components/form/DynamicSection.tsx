@@ -5,6 +5,7 @@ import FormField from './shared/FormField'
 import CheckpointList from './shared/CheckpointList'
 import SectionDivider from './shared/SectionDivider'
 import type { WorkflowQuestion, WorkflowQuestionOption, ConfigPhase } from '@/types'
+import { Check, Loader2, ArrowRight } from "lucide-react";
 
 interface DynamicSectionProps {
   sectionSlug:  string
@@ -281,28 +282,38 @@ export default function DynamicSection({
       )}
 
       {/* Save draft */}
+
       {!isComplete && (
         <button
           onClick={() => onSave(getCurrentData(), false)}
           disabled={isSaving}
-          style={{
-            width: '100%',
-            padding: '10px',
-            borderRadius: '8px',
-            fontSize: '12px',
-            fontWeight: 600,
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-            background: 'transparent',
-            border: 'var(--border-subtle)',
-            color: 'var(--text-muted)',
-            cursor: isSaving ? 'not-allowed' : 'pointer',
-            marginBottom: '8px',
-            transition: 'all 0.2s',
-            fontFamily: 'var(--font-family)',
-          }}
+          className={`
+            w-full
+            py-2.5
+            rounded-2xl
+            text-sm
+            font-semibold
+            border
+            border-slate-500
+            text-heading
+            bg-transparent
+            transition-all
+            mb-2
+            flex
+            items-center
+            justify-center
+            gap-2
+            ${isSaving ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}
+          `}
         >
-          {isSaving ? 'Saving...' : 'Save draft'}
+          {isSaving ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save draft"
+          )}
         </button>
       )}
 
@@ -310,33 +321,55 @@ export default function DynamicSection({
       <button
         onClick={() => onSave(getCurrentData(), true)}
         disabled={isSaving || isComplete}
-        style={{
-          width: '100%',
-          padding: '12px',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontWeight: 600,
-          fontFamily: 'var(--font-family)',
-          transition: 'all 0.2s',
-          ...(isComplete
-            ? {
-                background: 'rgba(0,129,255,0.08)',
-                border: '1px solid rgba(0,129,255,0.25)',
-                color: 'var(--electric-blue)',
-                cursor: 'default',
-              }
-            : {
-                background: 'linear-gradient(135deg, #A52AE1, #3999FE)',
-                border: 'none',
-                color: 'white',
-                cursor: isSaving ? 'not-allowed' : 'pointer',
-                opacity: isSaving ? 0.7 : 1,
-                boxShadow: '0 2px 12px rgba(0,129,255,0.25)',
-              }
-          ),
-        }}
+        className={`
+          w-full
+          py-3
+          rounded-2xl
+          font-semibold
+          text-sm
+          flex
+          items-center
+          justify-center
+          gap-2
+          transition-all
+          ${isComplete
+            ? `
+              bg-blue-100
+              border
+              border-blue-300
+              text-blue-600
+              cursor-default
+            `
+            : `
+              bg-violet-500
+              hover:bg-violet-700
+              text-white
+              shadow-md
+              ${isSaving ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}
+            `
+          }
+        `}
       >
-        {isSaving ? 'Saving...' : isComplete ? '✓ Section complete' : 'Mark section complete →'}
+        {isSaving && (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Saving...
+          </>
+        )}
+
+        {!isSaving && isComplete && (
+          <>
+            <Check className="h-4 w-4" />
+            Section complete
+          </>
+        )}
+
+        {!isSaving && !isComplete && (
+          <>
+            Mark section complete
+            <ArrowRight className="h-4 w-4" />
+          </>
+        )}
       </button>
 
     </div>

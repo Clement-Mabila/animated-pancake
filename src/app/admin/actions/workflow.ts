@@ -625,6 +625,113 @@ export async function restoreTemplateToDefaultAction(templateId: string): Promis
   return { ok: true }
 }
 
+// ── Import from primary template ─────────────────────────────────
+
+export async function importSectionFromPrimaryAction(
+  primarySectionId: string,
+  targetTemplateId: string,
+): Promise<{ ok: true; section: WorkflowSection; questions: WorkflowQuestion[] } | { ok: false; error: string }> {
+  await requireAdminSession()
+  const db = createAdminClient()
+
+  const { data: src, error: sErr } = await db
+    .from('workflow_sections')
+    .select('*')
+    .eq('id', primarySectionId)
+    .single()
+  if (sErr || !src) return { ok: false, error: sErr?.message ?? 'Section not found' }
+
+  const { data: existing } = await db
+    .from('workflow_sections')
+    .select('id')
+    .eq('template_id', targetTemplateId)
+    .eq('slug', src.slug)
+    .eq('is_deleted', false)
+    .maybeSingle()
+  if (existing) return { ok: false, error: `Section "${src.slug}" already exists in this template` }
+
+  const { data: last } = await db
+    .from('workflow_sections')
+    .select('sort_order')
+    .eq('template_id', targetTemplateId)
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const { id: _id, template_id: _t, ...sectionRest } = src
+  const { data: newSection, error: insErr } = await db
+    .from('workflow_sections')
+    .insert({ ...sectionRest, template_id: targetTemplateId, sort_order: (last?.sort_order ?? 0) + 1, is_deleted: false, deleted_at: null })
+    .select()
+    .single()
+  if (insErr || !newSection) return { ok: false, error: insErr?.message ?? 'Failed to insert section' }
+
+  const { data: srcQs } = await db
+    .from('workflow_questions')
+    .select('*')
+    .eq('template_id', src.template_id)
+    .eq('section_slug', src.slug)
+    .eq('is_deleted', false)
+
+  let newQuestions: WorkflowQuestion[] = []
+  if (srcQs?.length) {
+    const { data: insertedQs, error: qErr } = await db
+      .from('workflow_questions')
+      .insert(srcQs.map(({ id: _qid, template_id: _qt, ...qrest }) => ({ ...qrest, template_id: targetTemplateId, is_deleted: false, deleted_at: null })))
+      .select()
+    if (qErr) return { ok: false, error: qErr.message }
+    newQuestions = (insertedQs ?? []) as WorkflowQuestion[]
+  }
+
+  REVALIDATE()
+  return { ok: true, section: newSection as WorkflowSection, questions: newQuestions }
+}
+
+export async function importQuestionFromPrimaryAction(
+  primaryQuestionId: string,
+  targetTemplateId: string,
+): Promise<{ ok: true; question: WorkflowQuestion } | { ok: false; error: string }> {
+  await requireAdminSession()
+  const db = createAdminClient()
+
+  const { data: src, error: sErr } = await db
+    .from('workflow_questions')
+    .select('*')
+    .eq('id', primaryQuestionId)
+    .single()
+  if (sErr || !src) return { ok: false, error: sErr?.message ?? 'Question not found' }
+
+  const { data: existing } = await db
+    .from('workflow_questions')
+    .select('id')
+    .eq('template_id', targetTemplateId)
+    .eq('section_slug', src.section_slug)
+    .eq('field_key', src.field_key)
+    .eq('is_deleted', false)
+    .maybeSingle()
+  if (existing) return { ok: false, error: `Field "${src.field_key}" already exists in this section` }
+
+  const { data: last } = await db
+    .from('workflow_questions')
+    .select('sort_order')
+    .eq('template_id', targetTemplateId)
+    .eq('section_slug', src.section_slug)
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const { id: _id, template_id: _t, ...qRest } = src
+  const { data: newQ, error: insErr } = await db
+    .from('workflow_questions')
+    .insert({ ...qRest, template_id: targetTemplateId, sort_order: (last?.sort_order ?? 0) + 1, is_deleted: false, deleted_at: null })
+    .select()
+    .single()
+  if (insErr || !newQ) return { ok: false, error: insErr?.message ?? 'Failed to insert question' }
+
+  REVALIDATE()
+  return { ok: true, question: newQ as WorkflowQuestion }
+}
+
 // ── Bulk create from preset ──────────────────────────────────────
 
 export async function bulkCreateTemplateFromPreset(

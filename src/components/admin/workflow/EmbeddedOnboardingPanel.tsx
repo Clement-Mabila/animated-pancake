@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { CheckCircle2, Circle, Clock } from 'lucide-react'
+import { CheckCircle2, Circle, Clock, Lock } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
 import DynamicSection from '@/components/form/DynamicSection'
 import FleetSection from '@/components/form/sections/FleetSection'
@@ -232,7 +232,7 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
       {/* ── Existing contacts ── */}
       {contacts.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted">
+          <p className="text-sm font-semibold  text-heading">
             {roleLabel} contacts
           </p>
 
@@ -284,11 +284,7 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
                     <button
                       type="button"
                       onClick={() => onResume(cfg.id)}
-                      style={{
-                        padding: '5px 12px', borderRadius: '6px', border: 'none', flexShrink: 0,
-                        background: '#928CE3',
-                        color: 'white', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
-                      }}
+                      className='rounded-2xl bg-violet-600 text-white text-xs font-semibold px-2.5 py-1'
                     >
                       Resume →
                     </button>
@@ -343,7 +339,7 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
       {showNewForm && (
         <div className="flex flex-col gap-3">
           {contacts.length > 0 && (
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted">New contact</p>
+            <p className="text-sm font-semibold  text-heading">New contact</p>
           )}
 
           <div className="grid grid-cols-2 gap-2">
@@ -357,6 +353,21 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
               <input type="email" placeholder="contact@client.com"
                 value={email} onChange={e => setEmail(e.target.value)} className={inputClass} />
             </div>
+          </div>
+
+          {/* Locked role — determined by the template binding */}
+          <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-surface border border-border">
+            <Lock size={11} className="text-muted shrink-0" />
+            <span className="text-xs font-semibold text-heading flex-1">
+              {ROLE_DEFINITIONS[contactRole]?.label ?? contactRole}
+            </span>
+            <span style={{
+              fontSize: '9px', fontWeight: 600, padding: '1px 6px', borderRadius: '20px',
+              background: 'rgba(146,140,227,0.1)', color: 'var(--text-muted)',
+              letterSpacing: '0.05em', textTransform: 'uppercase', flexShrink: 0,
+            }}>
+              Template role
+            </span>
           </div>
 
           {needsSubLoc && subLocations.length > 0 && (
@@ -424,7 +435,7 @@ function SessionStartForm({ locationId: presetLocationId, onStart }: StartFormPr
 
   return (
     <div className="flex flex-col gap-3 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted">Who are you onboarding?</p>
+      <p className="text-sm font-semibold  text-heading">Who are you onboarding?</p>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
@@ -623,7 +634,7 @@ export default function EmbeddedOnboardingPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div>
-          <p className="text-xs font-semibold text-heading">Live Preview &amp; Onboarding</p>
+          <p className="text-sm font-semibold text-heading">Live Preview &amp; Onboarding</p>
           {configuration && (
             <p className="text-[10px] text-muted mt-0.5">
               ID: {configuration.id.slice(0, 8)}…

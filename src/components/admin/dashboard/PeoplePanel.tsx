@@ -38,7 +38,6 @@ const ROLE_LABEL_MAP: Record<ContactRoleLabel, string> = {
   supervisor:          'Supervisor',
   facilities_manager:  'Facilities Manager',
   operations_director: 'Operations Director',
-  fleet_wide_manager:  'Fleet Wide Manager',
   other:               'Other',
 }
 

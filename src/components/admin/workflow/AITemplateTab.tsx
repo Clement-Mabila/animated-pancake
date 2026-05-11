@@ -2,9 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import {
-  BrainCog, ChevronRight, ChevronLeft, Check, CheckCircle2,
-  Atom, SquircleDashed, Squircle, RotateCcw, Truck, Globe, Rocket,
+  BrainCog, ChevronRight, ChevronLeft, Check, CheckCircle2, Blend,
+  Atom, Info, Squircle, RotateCcw, Globe, Rocket, Blocks, Trash2, GripVertical,
 } from 'lucide-react'
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor,
+  useSensor, useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import LocationPicker from './LocationPicker'
 import { TEMPLATE_COLORS, DEPARTMENTS } from './TemplateMetadataModal'
 import {
@@ -13,6 +22,7 @@ import {
 } from '@/lib/phases'
 import { getSubLocations, getClientContactsForLocation } from '@/lib/supabase/queries'
 import { bulkCreateTemplateFromPreset, startOnboardingForTemplateAction } from '@/app/admin/actions/workflow'
+import { Alert } from '@/components/ui/alert'
 import type { ConfigPhase, ContactRoleLabel, ClientContact } from '@/types'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -65,6 +75,24 @@ interface TemplatePreset {
   colors:      PresetColors
   sections:    PresetSection[]
   deployTasks: { taskKey: string; title: string; description: string }[]
+}
+
+// ── Custom preset storage ──────────────────────────────────────
+
+interface StoredCustomPreset {
+  key:          string
+  name:         string
+  description:  string
+  sectionSlugs: string[]
+  createdAt:    string
+}
+
+const CUSTOM_PRESETS_KEY = 'ai_builder_custom_presets'
+
+function loadCustomPresetsFromStorage(): StoredCustomPreset[] {
+  if (typeof window === 'undefined') return []
+  try { return JSON.parse(localStorage.getItem(CUSTOM_PRESETS_KEY) ?? '[]') }
+  catch { return [] }
 }
 
 // ── Section definitions ────────────────────────────────────────
@@ -205,52 +233,204 @@ const COLORS: Record<string, PresetColors> = {
     skipBtn: 'border-rose-500/20 text-muted hover:bg-rose-500/5',
     reviewBorder: 'border-rose-500/15', tag: 'bg-rose-500/10 text-rose-500',
   },
+  custom: {
+    name: 'indigo',
+    iconBg: 'bg-indigo-500/10', iconText: 'text-indigo-500',
+    badgeBg: 'bg-indigo-500/10', badgeText: 'text-indigo-500',
+    outline: 'outline-indigo-500/20', outlineHover: 'hover:outline-indigo-500/40', outlineActive: 'outline-indigo-500/50',
+    dotActive: 'bg-indigo-500', dotInactive: 'bg-indigo-500/30', labelActive: 'text-indigo-500',
+    divider: 'border-indigo-500/10', panelBorder: 'border-indigo-500/15', panelBg: 'bg-indigo-500/5',
+    stepNumActive: 'bg-indigo-500/10 border-indigo-500/40 text-indigo-500',
+    stepLineActive: 'bg-indigo-500/50', stepLineDone: 'bg-indigo-500/20',
+    phaseActive: 'bg-indigo-500/10 outline-indigo-500/50 text-indigo-500',
+    phaseBg: 'bg-elevated outline-indigo-500/15 text-muted hover:outline-indigo-500/30',
+    chevronText: 'text-indigo-500', chevronBg: 'bg-indigo-500/10',
+    sectionNum: 'bg-indigo-500/10 text-indigo-500', successRing: 'bg-indigo-500',
+    createBtn: 'bg-indigo-500 hover:bg-indigo-500/90',
+    skipBtn: 'border-indigo-500/20 text-muted hover:bg-indigo-500/5',
+    reviewBorder: 'border-indigo-500/15', tag: 'bg-indigo-500/10 text-indigo-500',
+  },
 }
 
 const PRESETS: TemplatePreset[] = [
   {
     key: 'quick_start', name: 'Quick Start', tagline: 'Core setup, fast turnaround',
     description: 'Ideal for smaller deployments. Fleet validation, KPIs, alerts, roles, and timezone — everything needed to get to go-live quickly.',
-    icon: <SquircleDashed size={19} />, colors: COLORS.quick_start,
+    icon: <Blend size={16} />, colors: COLORS.quick_start,
     sections: ['fleet', 'kpis', 'alerts', 'roles', 'timezone'].map(k => S[k]),
     deployTasks: DEPLOY_TASKS,
   },
   {
     key: 'standard', name: 'Standard Operations', tagline: 'The right fit for most clients',
     description: 'Balanced coverage — fleet, contacts, KPIs, roles, alerts, integrations, insight, and timezone. Recommended for the majority of deployments.',
-    icon: <SquircleDashed size={19} />, colors: COLORS.standard,
+    icon: <Blend size={16} />, colors: COLORS.standard,
     sections: ['fleet', 'contacts', 'kpis', 'roles', 'alerts', 'integrations', 'timezone', 'insight'].map(k => S[k]),
     deployTasks: DEPLOY_TASKS,
   },
   {
     key: 'enterprise', name: 'Full Enterprise', tagline: 'Everything included',
     description: 'The complete suite — all sections including ROI tracking, FSM work orders, and documentation. For large or complex enterprise clients.',
-    icon: <Squircle size={19} />, colors: COLORS.enterprise,
+    icon: <Squircle size={16} />, colors: COLORS.enterprise,
     sections: ['roi', 'kpis', 'fleet', 'contacts', 'roles', 'alerts', 'integrations', 'fsm', 'insight', 'timezone', 'docs'].map(k => S[k]),
     deployTasks: DEPLOY_TASKS,
   },
   {
     key: 'logistics', name: 'Logistics & Warehouse', tagline: 'Fleet ops and integration focused',
     description: 'Optimised for logistics and warehouse clients — fleet validation, alert routing, system integrations, contacts, and timezone.',
-    icon: <Truck size={17} />, colors: COLORS.logistics,
+    icon: <Squircle size={16} />, colors: COLORS.logistics,
     sections: ['fleet', 'contacts', 'alerts', 'roles', 'integrations', 'timezone'].map(k => S[k]),
     deployTasks: DEPLOY_TASKS,
   },
   {
     key: 'multi_site', name: 'Multi-Site Regional', tagline: 'Multi-location reporting heavy',
     description: 'Built for regional clients across multiple sites. Prioritises contacts, per-site insight reports, and KPI tracking by location.',
-    icon: <Globe size={17} />, colors: COLORS.multi_site,
+    icon: <Globe size={16} />, colors: COLORS.multi_site,
     sections: ['fleet', 'contacts', 'kpis', 'roles', 'alerts', 'insight', 'timezone'].map(k => S[k]),
     deployTasks: DEPLOY_TASKS,
   },
   {
     key: 'rapid_pilot', name: 'Rapid Pilot', tagline: 'POC or trial deployment',
     description: 'Minimum viable template for proof-of-concept or pilot engagements. Fleet, alerts, and timezone only — quick to complete.',
-    icon: <Rocket size={17} />, colors: COLORS.rapid_pilot,
+    icon: <Rocket size={16} />, colors: COLORS.rapid_pilot,
     sections: ['fleet', 'alerts', 'timezone'].map(k => S[k]),
     deployTasks: DEPLOY_TASKS.slice(0, 3),
   },
 ]
+
+function customToPreset(cp: StoredCustomPreset): TemplatePreset {
+  const sections = cp.sectionSlugs.map(slug => S[slug]).filter(Boolean)
+  return {
+    key:         cp.key,
+    name:        cp.name,
+    tagline:     `Custom · ${sections.length} sections`,
+    description: cp.description,
+    icon:        <Blocks size={16} />,
+    colors:      COLORS.custom,
+    sections,
+    deployTasks: DEPLOY_TASKS,
+  }
+}
+
+// ── Error mapping ─────────────────────────────────────────────
+
+function mapWorkflowError(raw: string): { title: string; body: string } {
+  const r = raw.toLowerCase()
+
+  if (r.includes('duplicate key') || r.includes('unique constraint') || r.includes('already exists')) {
+    if (r.includes('location') || r.includes('contact_role')) {
+      return {
+        title: 'Duplicate template binding',
+        body:  'A template for this location and contact role already exists. Remove the binding or choose a different combination.',
+      }
+    }
+    if (r.includes('name')) {
+      return {
+        title: 'Name already in use',
+        body:  'A template with this name already exists. Go back and choose a different name.',
+      }
+    }
+    if (r.includes('slug')) {
+      return {
+        title: 'Duplicate section',
+        body:  'One of the selected sections already exists in this template. This is unexpected — please try again.',
+      }
+    }
+    if (r.includes('configuration') || r.includes('client_contact')) {
+      return {
+        title: 'Onboarding already started',
+        body:  'This contact already has an active onboarding configuration for this template. Open it from the Clients panel instead.',
+      }
+    }
+    return {
+      title: 'Duplicate record',
+      body:  'A record with these details already exists. Adjust your selections and try again.',
+    }
+  }
+
+  if (r.includes('foreign key') || r.includes('violates foreign')) {
+    if (r.includes('location')) {
+      return {
+        title: 'Location not found',
+        body:  'The selected location no longer exists. Go back to Binding and re-select.',
+      }
+    }
+    return {
+      title: 'Invalid reference',
+      body:  'One of the selected values no longer exists in the system. Go back and re-select.',
+    }
+  }
+
+  if (r.includes('permission denied') || r.includes('row-level security')) {
+    return {
+      title: 'Permission denied',
+      body:  'You do not have permission to perform this action. Contact your administrator.',
+    }
+  }
+
+  if (r.includes('timeout') || r.includes('connection')) {
+    return {
+      title: 'Connection error',
+      body:  'Could not reach the database. Check your connection and try again.',
+    }
+  }
+
+  return { title: 'Something went wrong', body: raw }
+}
+
+// ── Phase helpers (right panel) ───────────────────────────────
+
+const DISPLAY_PHASES = ['early', 'pre_deploy', 'post'] as const
+
+const PHASE_DOT_COLORS: Record<string, string> = {
+  early:      'bg-emerald-400',
+  pre_deploy: 'bg-sky-400',
+  post:       'bg-violet-400',
+}
+
+const PHASE_ABBR: Record<string, string> = {
+  early:      'Early',
+  pre_deploy: 'Pre-Deploy',
+  post:       'Post',
+}
+
+function SortableSectionItem({
+  section, counter, isExtra, c,
+}: {
+  section:  PresetSection
+  counter:  number
+  isExtra:  boolean
+  c:        PresetColors
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.slug })
+  const style: React.CSSProperties = {
+    transform:  CSS.Transform.toString(transform),
+    transition,
+    opacity:    isDragging ? 0.5 : 1,
+  }
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-elevated">
+      <button
+        {...attributes}
+        {...listeners}
+        type="button"
+        aria-label="Drag to reorder"
+        className="text-muted cursor-grab active:cursor-grabbing p-0.5 rounded hover:text-heading transition-colors shrink-0"
+      >
+        <GripVertical size={12} strokeWidth={2} />
+      </button>
+      <div className={`w-4 h-4 rounded-full ${c.sectionNum} flex items-center justify-center text-xs font-bold shrink-0`}>
+        {counter}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-heading m-0 truncate">{section.title}</p>
+        <p className="text-xs text-muted m-0 truncate">{section.subtitle}</p>
+      </div>
+      {isExtra && (
+        <span className={`text-[10px] px-1 py-0.5 rounded-full ${c.tag} font-semibold shrink-0`}>+extra</span>
+      )}
+    </div>
+  )
+}
 
 // ── Shared styles ──────────────────────────────────────────────
 
@@ -339,11 +519,12 @@ function NavRow({
 
 interface Props {
   onTemplateCreated: (templateId: string) => void
+  onOpenPreview?:    (templateId: string) => void
 }
 
 type Step = 0 | 1 | 2 | 3 | 4 | 5
 
-export default function AITemplateTab({ onTemplateCreated }: Props) {
+export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Props) {
   // Wizard
   const [step,             setStep]             = useState<Step>(0)
   const [preset,           setPreset]           = useState<TemplatePreset | null>(null)
@@ -372,11 +553,17 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
   const [newContactSubLocId, setNewContactSubLocId] = useState('')
 
   // Result
-  const [creating,    setCreating]    = useState(false)
-  const [starting,    setStarting]    = useState(false)
-  const [error,       setError]       = useState<string | null>(null)
-  const [createdId,   setCreatedId]   = useState<string | null>(null)
-  const [createdName, setCreatedName] = useState('')
+  const [creating,        setCreating]        = useState(false)
+  const [error,           setError]           = useState<string | null>(null)
+  const [createdId,       setCreatedId]       = useState<string | null>(null)
+  const [createdName,     setCreatedName]     = useState('')
+  const [createdConfigId, setCreatedConfigId] = useState<string | null>(null)
+
+  // Custom presets
+  const [customPresets,   setCustomPresets]   = useState<StoredCustomPreset[]>(() => loadCustomPresetsFromStorage())
+  const [saveCustomName,  setSaveCustomName]  = useState('')
+  const [showSaveCustom,  setShowSaveCustom]  = useState(false)
+  const [customSaved,     setCustomSaved]     = useState(false)
 
   // Fallback to violet before a preset is selected
   const c: PresetColors = preset?.colors ?? COLORS.enterprise
@@ -394,6 +581,15 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
     })
   }, [locationId, contactRole])
 
+  useEffect(() => {
+    if (step === 4 && preset) {
+      setSaveCustomName(`${preset.name} (custom)`)
+      setShowSaveCustom(false)
+      setCustomSaved(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
+
   function reset() {
     setStep(0); setPreset(null); setSelectedSections([])
     setName(''); setDepartment(''); setDescription(''); setColor('#928CE3')
@@ -402,7 +598,8 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
     setExistingContacts([]); setContactFetchDone(false)
     setSelectedContactId(null); setShowNewContact(false)
     setNewContactName(''); setNewContactEmail(''); setNewContactSubLocId('')
-    setError(null); setCreatedId(null); setCreatedName('')
+    setError(null); setCreatedId(null); setCreatedName(''); setCreatedConfigId(null)
+    setSaveCustomName(''); setShowSaveCustom(false); setCustomSaved(false)
   }
 
   async function handleCreate() {
@@ -424,40 +621,80 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
         preset.deployTasks,
       )
       if (!result.ok) { setError(result.error); return }
-      setCreatedId(result.templateId)
+
+      const templateId = result.templateId
+      setCreatedId(templateId)
       setCreatedName(name.trim())
+
+      // Persist contact + create config immediately when a contact was provided
+      if (locationId && contactRole) {
+        let contactData: { fullName: string; email: string; subLocationId?: string } | null = null
+        if (selectedContactId) {
+          const ct = existingContacts.find(x => x.id === selectedContactId)
+          if (ct) contactData = { fullName: ct.full_name, email: ct.email, subLocationId: ct.sub_location_id ?? undefined }
+        } else if (showNewContact && newContactName.trim() && newContactEmail.trim()) {
+          const tier = ROLE_SUB_LOCATION_TIER[contactRole as ContactRoleLabel]
+          contactData = {
+            fullName:      newContactName.trim(),
+            email:         newContactEmail.trim(),
+            subLocationId: tier === 'single_sub' ? newContactSubLocId || undefined : undefined,
+          }
+        }
+        if (contactData) {
+          const startResult = await startOnboardingForTemplateAction(templateId, contactData, startPhase)
+          if (startResult.ok) setCreatedConfigId(startResult.configId)
+          else setError(startResult.error)
+        }
+      }
+
       setStep(5)
     } finally {
       setCreating(false)
     }
   }
 
-  async function handleStartOnboarding() {
-    if (!createdId || !locationId || !contactRole) return
-    const useExisting = !!selectedContactId
-    const useNew      = showNewContact && !!newContactName.trim() && !!newContactEmail.trim()
-    if (!useExisting && !useNew) return
-    setStarting(true); setError(null)
-    try {
-      let contactData: { fullName: string; email: string; subLocationId?: string }
-      if (useExisting) {
-        const ct = existingContacts.find(x => x.id === selectedContactId)
-        if (!ct) { setError('Selected contact not found'); return }
-        contactData = { fullName: ct.full_name, email: ct.email, subLocationId: ct.sub_location_id ?? undefined }
-      } else {
-        const tier = ROLE_SUB_LOCATION_TIER[contactRole as ContactRoleLabel]
-        contactData = {
-          fullName:      newContactName.trim(),
-          email:         newContactEmail.trim(),
-          subLocationId: tier === 'single_sub' ? newContactSubLocId || undefined : undefined,
-        }
-      }
-      const r = await startOnboardingForTemplateAction(createdId, contactData, startPhase)
-      if (!r.ok) { setError(r.error); return }
-      window.open(`/onboarding?config=${r.configId}&template_id=${createdId}`, '_blank')
-    } finally {
-      setStarting(false)
+  function handleSaveCustomPreset() {
+    if (!preset || !saveCustomName.trim() || selectedSections.length === 0) return
+    const stored: StoredCustomPreset = {
+      key:          'custom_' + Date.now(),
+      name:         saveCustomName.trim(),
+      description:  `Custom preset with ${selectedSections.length} section${selectedSections.length !== 1 ? 's' : ''}`,
+      sectionSlugs: selectedSections.map(s => s.slug),
+      createdAt:    new Date().toISOString(),
     }
+    const updated = [...customPresets, stored]
+    setCustomPresets(updated)
+    localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updated))
+    setCustomSaved(true)
+    setTimeout(() => setCustomSaved(false), 2500)
+  }
+
+  function deleteCustomPreset(key: string) {
+    const updated = customPresets.filter(p => p.key !== key)
+    setCustomPresets(updated)
+    localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updated))
+  }
+
+  const isModified = !!preset && (() => {
+    const orig = new Set(preset.sections.map(s => s.slug))
+    const sel  = new Set(selectedSections.map(s => s.slug))
+    return orig.size !== sel.size || [...orig].some(sl => !sel.has(sl)) || [...sel].some(sl => !orig.has(sl))
+  })()
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setSelectedSections(prev => {
+      const oldIdx = prev.findIndex(s => s.slug === active.id)
+      const newIdx = prev.findIndex(s => s.slug === over.id)
+      if (oldIdx === -1 || newIdx === -1) return prev
+      return arrayMove(prev, oldIdx, newIdx)
+    })
   }
 
   const contactDisplayName = selectedContactId
@@ -469,40 +706,67 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
 
   // ── Right panel ─────────────────────────────────────────────
 
-  const rightPanel = preset ? (
-    <div className="p-4 rounded-2xl bg-surface border border-border">
-      <div className="flex items-center gap-2 mb-3">
-        <div className={`w-7 h-7 rounded-md ${c.iconBg} flex items-center justify-center ${c.iconText} shrink-0`}>
-          {preset.icon}
+  const rightPanel = preset ? (() => {
+    const grouped: Record<string, PresetSection[]> = {}
+    for (const ph of DISPLAY_PHASES) grouped[ph] = []
+    for (const s of selectedSections) {
+      const ph = s.visibleInPhases[0] ?? 'pre_deploy'
+      grouped[ph]?.push(s)
+    }
+    let counter = 0
+    return (
+      <div className="p-4 rounded-2xl bg-surface border border-border">
+        <div className="flex items-center gap-2 mb-3">
+          <div className={`w-7 h-7 rounded-md ${c.iconBg} flex items-center justify-center ${c.iconText} shrink-0`}>
+            {preset.icon}
+          </div>
+          <div>
+            <p className="text-xs font-bold text-heading m-0">{preset.name}</p>
+            <p className={`text-xs ${c.labelActive} font-medium m-0`}>{selectedSections.length} section{selectedSections.length !== 1 ? 's' : ''} selected</p>
+          </div>
         </div>
-        <div>
-          <p className="text-xs font-bold text-heading m-0">{preset.name}</p>
-          <p className={`text-xs ${c.labelActive} font-medium m-0`}>{selectedSections.length} / {preset.sections.length} sections</p>
+        <div className="flex flex-col gap-3">
+          {DISPLAY_PHASES.map(ph => {
+            const phaseSections = grouped[ph]
+            if (!phaseSections || phaseSections.length === 0) return null
+            const slugIds = phaseSections.map(s => s.slug)
+            return (
+              <div key={ph}>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${PHASE_DOT_COLORS[ph]} shrink-0`} />
+                  <span className="text-xs font-semibold text-muted">{PHASE_ABBR[ph]}</span>
+                  <span className="text-xs text-muted ml-0.5">· {phaseSections.length}</span>
+                </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={slugIds} strategy={verticalListSortingStrategy}>
+                    <div className="flex flex-col gap-1">
+                      {phaseSections.map(s => {
+                        counter++
+                        return (
+                          <SortableSectionItem
+                            key={s.slug}
+                            section={s}
+                            counter={counter}
+                            isExtra={!preset.sections.some(ps => ps.slug === s.slug)}
+                            c={c}
+                          />
+                        )
+                      })}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
+            )
+          })}
         </div>
+        <p className="text-xs text-muted mt-2.5 pt-2.5 border-t border-border mb-0">
+          + {preset.deployTasks.length} deployment checklist tasks
+        </p>
       </div>
-      <div className="flex flex-col gap-1">
-        {preset.sections.map((s, i) => {
-          const active = selectedSections.some(sel => sel.slug === s.slug)
-          return (
-            <div key={s.slug} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-opacity duration-150 ${active ? 'bg-elevated opacity-100' : 'opacity-35'}`}>
-              <div className={`w-4 h-4 rounded-full ${active ? c.sectionNum : 'bg-elevated text-muted'} flex items-center justify-center text-xs font-bold shrink-0`}>
-                {active ? i + 1 : '—'}
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-heading m-0">{s.title}</p>
-                <p className="text-xs text-muted m-0">{s.subtitle}</p>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-      <p className="text-xs text-muted mt-2.5 pt-2.5 border-t border-border mb-0">
-        + {preset.deployTasks.length} deployment checklist tasks
-      </p>
-    </div>
-  ) : (
+    )
+  })() : (
     <div className="p-4 rounded-2xl bg-surface border border-border">
-      <p className="text-sm font-semibold text-muted mb-3.5">How it works</p>
+      <p className="text-base flex items-center gap-2 font-semibold text-heading mb-4.5"> <Info className='w-3.5 h-3.5 bg-violet-500/10 text-violet-500 rounded-2xl'/>How it works</p>
       {[
         ['Pick a preset',      "Choose a template type that matches your client's complexity."],
         ['Customise sections', 'Toggle individual sections on or off from the preset.'],
@@ -515,7 +779,7 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
             {i + 1}
           </div>
           <div>
-            <p className="text-xs font-semibold text-heading m-0 mb-0.5">{title}</p>
+            <p className="text-sm font-semibold text-heading m-0 mb-0.5">{title}</p>
             <p className="text-xs text-muted leading-normal m-0">{desc}</p>
           </div>
         </div>
@@ -530,7 +794,7 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
       <div className="mb-5">
         <div className="flex items-center gap-2.5 mb-2">
           <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-500">
-            <Atom size={18} />
+            <Atom size={16} />
           </div>
           <h2 className="text-base font-bold text-heading m-0">Build a template</h2>
         </div>
@@ -539,9 +803,57 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
         </p>
       </div>
 
-      <p className="text-sm font-semibold text-body-text mb-3">Choose a starting point</p>
+      <p className="text-base font-semibold flex items-center gap-2 text-heading mb-3"><Info className='w-3.5 h-3.5 bg-violet-500/10 text-violet-500 rounded-2xl'/>Choose a starting point</p>
 
       <div className="flex flex-col gap-1.5">
+
+        {customPresets.length > 0 && (
+          <>
+            <p className="text-sm font-semibold text-heading  mb-0.5">Your presets</p>
+            {customPresets.map(cp => {
+              const p  = customToPreset(cp)
+              const pc = p.colors
+              return (
+                <div key={cp.key} className="relative group/card">
+                  <button
+                    type="button"
+                    onClick={() => { setPreset(p); setSelectedSections([...p.sections]); setStep(1) }}
+                    className="flex items-center gap-3 p-4 pr-10 rounded-xl border border-border bg-elevated cursor-pointer text-left transition-all duration-200 w-full hover:border-indigo-500/30"
+                  >
+                    <div className={`w-8 h-8 rounded-lg ${pc.iconBg} flex items-center justify-center ${pc.iconText} shrink-0`}>
+                      {p.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-sm font-semibold text-heading">{p.name}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${pc.tag} font-semibold shrink-0`}>
+                          {p.sections.length} sections
+                        </span>
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500 font-semibold shrink-0">
+                          Custom
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted leading-normal m-0">{p.description}</p>
+                    </div>
+                    <div className={`${pc.chevronBg} rounded-full p-1 flex items-center justify-center shrink-0`}>
+                      <ChevronRight size={16} className={pc.chevronText} />
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteCustomPreset(cp.key)}
+                    className="absolute top-1/2 right-3 -translate-y-1/2 opacity-0 group-hover/card:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-red-500/10 text-muted hover:text-red-400"
+                    title="Delete custom preset"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              )
+            })}
+            <p className="text-sm font-semibold text-heading mt-3 mb-0.5">Starting points</p>
+          </>
+        )}
+
         {PRESETS.map(p => {
           const pc = p.colors
           return (
@@ -575,66 +887,130 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
 
   // ── Step 1: Section toggle ───────────────────────────────────
 
-  const step1 = preset ? (
-    <div>
-      <StepBar current={0} colors={c} />
-      <h3 className="text-sm font-bold text-heading m-0 mb-1">Customise sections</h3>
-      <p className="text-xs text-muted m-0 mb-4">
-        All <strong className="text-heading">{preset.name}</strong> sections are included. Toggle any off that don't apply to this client.
-      </p>
+  const step1 = preset ? (() => {
+    const extraSections = Object.values(S).filter(s => !preset.sections.some(ps => ps.slug === s.slug))
+    const addedExtras   = extraSections.filter(s => selectedSections.some(sel => sel.slug === s.slug))
+    const presetRemoved = preset.sections.length - selectedSections.filter(s => preset.sections.some(ps => ps.slug === s.slug)).length
 
-      <div className="flex flex-col gap-1.5">
-        {preset.sections.map(s => {
-          const active = selectedSections.some(sel => sel.slug === s.slug)
-          const toggle = () => setSelectedSections(prev =>
-            active
-              ? prev.length > 1 ? prev.filter(x => x.slug !== s.slug) : prev
-              : [...prev, s]
-          )
-          return (
-            <button
-              key={s.slug}
-              type="button"
-              onClick={toggle}
-              className={[
-                'flex items-center gap-2.5 py-2.5 px-3 rounded-xl border cursor-pointer text-left transition-all duration-150',
-                active
-                  ? `${c.panelBg} border-transparent outline outline-2 ${c.outlineActive}`
-                  : 'bg-elevated border-border hover:border-soft-lavender/40',
-              ].join(' ')}
-            >
-              <div className={[
-                'shrink-0 flex items-center justify-center transition-all duration-150',
-                active ? `${c.successRing}` : 'bg-surface border border-border',
-              ].join(' ')} style={{ width: '18px', height: '18px', borderRadius: '5px' }}>
-                {active && <Check size={11} color="white" strokeWidth={3} />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={`text-xs font-semibold m-0 ${active ? 'text-heading' : 'text-muted'}`}>{s.title}</p>
-                <p className="text-xs text-muted m-0 mt-0.5">{s.subtitle}</p>
-              </div>
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${c.badgeBg} text-muted font-medium shrink-0`}>
-                {s.checkpointCount} checkpoints
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      {selectedSections.length < preset.sections.length && (
-        <p className={`text-xs ${c.labelActive} mt-2.5`}>
-          {preset.sections.length - selectedSections.length} section{preset.sections.length - selectedSections.length !== 1 ? 's' : ''} excluded
+    return (
+      <div>
+        <StepBar current={0} colors={c} />
+        <h3 className="text-sm font-bold text-heading m-0 mb-1">Customise sections</h3>
+        <p className="text-xs text-muted m-0 mb-4">
+          All <strong className="text-heading">{preset.name}</strong> sections are included. Toggle any off, or add extra sections below.
         </p>
-      )}
 
-      <NavRow
-        onBack={() => { setPreset(null); setSelectedSections([]); setStep(0) }}
-        onNext={() => setStep(2)}
-        nextDisabled={selectedSections.length === 0}
-        colors={c}
-      />
-    </div>
-  ) : null
+        <div className="flex flex-col gap-1.5">
+          {preset.sections.map(s => {
+            const active = selectedSections.some(sel => sel.slug === s.slug)
+            const toggle = () => setSelectedSections(prev =>
+              active
+                ? prev.length > 1 ? prev.filter(x => x.slug !== s.slug) : prev
+                : [...prev, s]
+            )
+            return (
+              <button
+                key={s.slug}
+                type="button"
+                onClick={toggle}
+                className={[
+                  'flex items-center gap-2.5 py-2.5 px-3 rounded-xl border cursor-pointer text-left transition-all duration-150',
+                  active
+                    ? `${c.panelBg} border-transparent outline outline-2 ${c.outlineActive}`
+                    : 'bg-elevated border-border hover:border-soft-lavender/40',
+                ].join(' ')}
+              >
+                <div className={[
+                  'shrink-0 flex items-center justify-center transition-all duration-150',
+                  active ? `${c.successRing}` : 'bg-surface border border-border',
+                ].join(' ')} style={{ width: '18px', height: '18px', borderRadius: '5px' }}>
+                  {active && <Check size={11} color="white" strokeWidth={3} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-semibold m-0 ${active ? 'text-heading' : 'text-muted'}`}>{s.title}</p>
+                  <p className="text-xs text-muted m-0 mt-0.5">{s.subtitle}</p>
+                </div>
+                <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-elevated border border-border text-muted font-medium shrink-0">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PHASE_DOT_COLORS[s.visibleInPhases[0] ?? 'pre_deploy']}`} />
+                  {PHASE_ABBR[s.visibleInPhases[0] ?? 'pre_deploy']}
+                </span>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${c.badgeBg} text-muted font-medium shrink-0`}>
+                  {s.checkpointCount} checkpoints
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {extraSections.length > 0 && (
+          <>
+            <div className="flex items-center gap-2 my-3">
+              <div className="flex-1 h-px border-t border-dashed border-border" />
+              <span className="text-sm font-semibold text-heading ">Also available</span>
+              <div className="flex-1 h-px border-t border-dashed border-border" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {extraSections.map(s => {
+                const active = selectedSections.some(sel => sel.slug === s.slug)
+                const toggle = () => setSelectedSections(prev =>
+                  active
+                    ? prev.length > 1 ? prev.filter(x => x.slug !== s.slug) : prev
+                    : [...prev, s]
+                )
+                return (
+                  <button
+                    key={s.slug}
+                    type="button"
+                    onClick={toggle}
+                    className={[
+                      'flex items-center gap-2.5 py-2.5 px-3 rounded-xl border cursor-pointer text-left transition-all duration-150',
+                      active
+                        ? `${c.panelBg} border-transparent outline outline-2 ${c.outlineActive}`
+                        : 'bg-elevated border-border hover:border-soft-lavender/40 opacity-70 hover:opacity-100',
+                    ].join(' ')}
+                  >
+                    <div className={[
+                      'shrink-0 flex items-center justify-center transition-all duration-150',
+                      active ? `${c.successRing}` : 'bg-surface border border-border',
+                    ].join(' ')} style={{ width: '18px', height: '18px', borderRadius: '5px' }}>
+                      {active && <Check size={11} color="white" strokeWidth={3} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs font-semibold m-0 ${active ? 'text-heading' : 'text-muted'}`}>{s.title}</p>
+                      <p className="text-xs text-muted m-0 mt-0.5">{s.subtitle}</p>
+                    </div>
+                    <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-elevated border border-border text-muted font-medium shrink-0">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PHASE_DOT_COLORS[s.visibleInPhases[0] ?? 'pre_deploy']}`} />
+                      {PHASE_ABBR[s.visibleInPhases[0] ?? 'pre_deploy']}
+                    </span>
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-elevated border border-border text-muted font-medium shrink-0">
+                      {s.checkpointCount} checkpoints
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        {(presetRemoved > 0 || addedExtras.length > 0) && (
+          <p className={`text-xs ${c.labelActive} mt-2.5`}>
+            {[
+              presetRemoved > 0 && `${presetRemoved} section${presetRemoved !== 1 ? 's' : ''} excluded`,
+              addedExtras.length > 0 && `${addedExtras.length} extra section${addedExtras.length !== 1 ? 's' : ''} added`,
+            ].filter(Boolean).join(' · ')}
+          </p>
+        )}
+
+        <NavRow
+          onBack={() => { setPreset(null); setSelectedSections([]); setStep(0) }}
+          onNext={() => setStep(2)}
+          nextDisabled={selectedSections.length === 0}
+          colors={c}
+        />
+      </div>
+    )
+  })() : null
 
   // ── Step 2: Template metadata + color ────────────────────────
 
@@ -783,47 +1159,6 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
               </div>
             )}
 
-            {/* Starting phase */}
-            {contactRole && (
-              <div>
-                <label className={labelCls}>Starting phase <span className="font-normal">— default phase when onboarding this contact</span></label>
-                <div className="flex flex-col gap-1.5">
-                  {(PHASE_ORDER.filter(p => p !== 'deploy') as ConfigPhase[]).map((p, idx) => {
-                    const { count, unit } = PHASE_ITEM_COUNTS[p]
-                    const isSel = startPhase === p
-                    return (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => setStartPhase(p)}
-                        className={[
-                          'flex items-center gap-2.5 py-2.5 px-3 rounded-xl border cursor-pointer text-left transition-all duration-150',
-                          isSel
-                            ? `${c.panelBg} border-transparent outline outline-2 ${c.outlineActive}`
-                            : 'bg-elevated border-border text-muted hover:border-soft-lavender/40',
-                        ].join(' ')}
-                      >
-                        <div className={[
-                          'w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-xs font-bold transition-all duration-150',
-                          isSel ? `${c.successRing} text-white` : 'bg-elevated border border-border text-muted',
-                        ].join(' ')}>
-                          {idx + 1}
-                        </div>
-                        <div className="flex-1">
-                          <div className={`text-xs font-semibold mb-0.5 ${isSel ? c.labelActive : 'text-heading'}`}>
-                            {PHASE_LABELS[p]}
-                            <span className="ml-1.5 text-xs font-normal text-muted">{count} {unit}</span>
-                          </div>
-                          <div className="text-xs text-muted leading-snug">{PHASE_DESCRIPTIONS[p]}</div>
-                        </div>
-                        {isSel && <CheckCircle2 size={13} className={c.labelActive} />}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* Client contacts */}
             {contactRole && (
               <div>
@@ -918,6 +1253,47 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
                     )}
                   </div>
                 )}
+
+                {/* Starting phase — only shown once a contact is selected or being created */}
+                {(selectedContactId || showNewContact) && (
+                  <div className="mt-1">
+                    <label className={labelCls}>Starting phase <span className="font-normal">— for this contact&apos;s onboarding configuration</span></label>
+                    <div className="flex flex-col gap-1.5">
+                      {(PHASE_ORDER.filter(p => p !== 'deploy') as ConfigPhase[]).map((p, idx) => {
+                        const { count, unit } = PHASE_ITEM_COUNTS[p]
+                        const isSel = startPhase === p
+                        return (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setStartPhase(p)}
+                            className={[
+                              'flex items-center gap-2.5 py-2.5 px-3 rounded-xl border cursor-pointer text-left transition-all duration-150',
+                              isSel
+                                ? `${c.panelBg} border-transparent outline outline-2 ${c.outlineActive}`
+                                : 'bg-elevated border-border text-muted hover:border-soft-lavender/40',
+                            ].join(' ')}
+                          >
+                            <div className={[
+                              'w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-xs font-bold transition-all duration-150',
+                              isSel ? `${c.successRing} text-white` : 'bg-elevated border border-border text-muted',
+                            ].join(' ')}>
+                              {idx + 1}
+                            </div>
+                            <div className="flex-1">
+                              <div className={`text-xs font-semibold mb-0.5 ${isSel ? c.labelActive : 'text-heading'}`}>
+                                {PHASE_LABELS[p]}
+                                <span className="ml-1.5 text-xs font-normal text-muted">{count} {unit}</span>
+                              </div>
+                              <div className="text-xs text-muted leading-snug">{PHASE_DESCRIPTIONS[p]}</div>
+                            </div>
+                            {isSel && <CheckCircle2 size={13} className={c.labelActive} />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -930,6 +1306,14 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
 
   // ── Step 4: Review ───────────────────────────────────────────
 
+  const phaseBreakdown = DISPLAY_PHASES
+    .map(ph => {
+      const n = selectedSections.filter(s => (s.visibleInPhases[0] ?? 'pre_deploy') === ph).length
+      return n > 0 ? `${n} ${PHASE_ABBR[ph]}` : null
+    })
+    .filter(Boolean)
+    .join(' · ')
+
   const step4 = (
     <div>
       <StepBar current={3} colors={c} />
@@ -938,13 +1322,15 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
 
       <div className="flex flex-col gap-1.5 mb-4">
         {([
-          { label: 'Preset',  value: `${preset?.name} · ${selectedSections.length} sections` },
+          { label: 'Preset',  value: `${preset?.name} · ${selectedSections.length} sections`, sub: phaseBreakdown || undefined },
           { label: 'Name',    value: name, sub: description || undefined, extra: department || undefined },
           { label: 'Binding',
             value: locationId && contactRole
-              ? `${ROLE_DEFINITIONS[contactRole as ContactRoleLabel]?.label} · ${PHASE_LABELS[startPhase]}`
+              ? ROLE_DEFINITIONS[contactRole as ContactRoleLabel]?.label
               : 'Unbound — general template',
-            sub: contactDisplayName ? `Contact: ${contactDisplayName}` : undefined,
+            sub: contactDisplayName
+              ? `${contactDisplayName} · ${PHASE_LABELS[startPhase]}`
+              : locationId && contactRole ? 'No contact selected — phase set after creation' : undefined,
           },
         ] as { label: string; value: string; sub?: string; extra?: string }[]).map(row => (
           <div key={row.label} className="py-2.5 px-3 rounded-xl bg-elevated border border-border">
@@ -956,11 +1342,53 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
         ))}
       </div>
 
-      {error && (
-        <div className="py-2.5 px-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500/90 text-xs mb-3">
-          {error}
+      {isModified && (
+        <div className={`rounded-xl border ${c.reviewBorder} overflow-hidden mb-3`}>
+          <button
+            type="button"
+            onClick={() => setShowSaveCustom(v => !v)}
+            className={`flex items-center justify-between w-full px-3 py-2.5 text-xs font-semibold ${c.labelActive} hover:bg-indigo-500/5 transition-colors`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Blocks size={12} />
+              Save as custom preset for later
+            </span>
+            <ChevronRight size={12} className={`transition-transform duration-150 ${showSaveCustom ? 'rotate-90' : ''}`} />
+          </button>
+          {showSaveCustom && (
+            <div className="px-3 pb-3 flex flex-col gap-2 border-t border-border/50">
+              <input
+                type="text"
+                value={saveCustomName}
+                onChange={e => setSaveCustomName(e.target.value)}
+                placeholder="Custom preset name…"
+                className={`${inputCls} mt-2`}
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={handleSaveCustomPreset}
+                disabled={!saveCustomName.trim() || customSaved}
+                className={[
+                  'w-full py-2 rounded-lg border-none text-xs font-semibold transition-colors duration-150',
+                  customSaved
+                    ? 'bg-green-500/10 text-green-500 cursor-default'
+                    : !saveCustomName.trim()
+                    ? 'bg-elevated text-muted cursor-not-allowed opacity-50'
+                    : `${c.createBtn} text-white cursor-pointer`,
+                ].join(' ')}
+              >
+                {customSaved ? '✓ Preset saved' : 'Save preset'}
+              </button>
+            </div>
+          )}
         </div>
       )}
+
+      {error && (() => {
+        const { title, body } = mapWorkflowError(error)
+        return <Alert title={title} onDismiss={() => setError(null)} className="mb-3">{body}</Alert>
+      })()}
 
       <NavRow onBack={() => setStep(3)} onNext={handleCreate} nextLabel="Create template" creating={creating} colors={c} />
     </div>
@@ -980,25 +1408,49 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
         </div>
       </div>
 
-      <p className="text-xs text-muted leading-relaxed mb-4">
+      <p className="text-xs text-muted leading-relaxed mb-3">
         <strong className="text-heading">{createdName}</strong> has been saved as a draft.
-        Open the Sections tab to add questions, configure phase visibility, and publish when ready.
+        Open the Sections tab to add questions and publish when ready.
       </p>
 
+      {/* Linked contact badge */}
+      {createdConfigId && contactDisplayName && (
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-elevated border border-border mb-3">
+          <div className={`w-6 h-6 rounded-full ${c.successRing} flex items-center justify-center shrink-0`}>
+            <Check size={11} color="white" strokeWidth={3} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-heading m-0">{contactDisplayName}</p>
+            <p className="text-xs text-muted m-0">
+              {contactRole ? ROLE_DEFINITIONS[contactRole as ContactRoleLabel]?.label : ''} · {PHASE_LABELS[startPhase]} · Configuration created
+            </p>
+          </div>
+          <CheckCircle2 size={13} className={c.labelActive} />
+        </div>
+      )}
+
       <div className="flex flex-col gap-2">
-        <button
-          onClick={() => createdId && onTemplateCreated(createdId)}
-          className={`w-full py-2.5 rounded-lg border-none ${c.createBtn} text-white text-xs font-semibold cursor-pointer transition-colors duration-150`}
-        >
-          Open in Sections tab →
-        </button>
-        {hasContact && (
+        {createdConfigId && onOpenPreview ? (
+          <>
+            <button
+              onClick={() => createdId && onOpenPreview(createdId)}
+              className={`w-full py-2.5 rounded-lg border-none ${c.createBtn} text-white text-xs font-semibold cursor-pointer transition-colors duration-150`}
+            >
+              Open Preview →
+            </button>
+            <button
+              onClick={() => createdId && onTemplateCreated(createdId)}
+              className={`w-full py-2 rounded-lg bg-transparent border ${c.skipBtn} text-xs font-semibold cursor-pointer transition-colors duration-150`}
+            >
+              Open in Sections tab →
+            </button>
+          </>
+        ) : (
           <button
-            onClick={handleStartOnboarding}
-            disabled={starting}
-            className={`w-full py-2.5 rounded-lg bg-transparent border ${c.skipBtn} text-xs font-semibold cursor-pointer transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed`}
+            onClick={() => createdId && onTemplateCreated(createdId)}
+            className={`w-full py-2.5 rounded-lg border-none ${c.createBtn} text-white text-xs font-semibold cursor-pointer transition-colors duration-150`}
           >
-            {starting ? 'Opening…' : `Start Onboarding for ${contactDisplayName} →`}
+            Open in Sections tab →
           </button>
         )}
         <button
@@ -1009,11 +1461,10 @@ export default function AITemplateTab({ onTemplateCreated }: Props) {
         </button>
       </div>
 
-      {error && (
-        <div className="py-2.5 px-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500/90 text-xs mt-3">
-          {error}
-        </div>
-      )}
+      {error && (() => {
+        const { title, body } = mapWorkflowError(error)
+        return <Alert title={title} onDismiss={() => setError(null)} className="mt-3">{body}</Alert>
+      })()}
     </div>
   )
 
