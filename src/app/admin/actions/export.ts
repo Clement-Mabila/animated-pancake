@@ -7,8 +7,11 @@ import {
   evaluateExportCompleteness,
   fetchConfigurationsForExport,
   fetchSectionsForExport,
+  fetchPersonsForExport,
   fetchQuestionDefaultsForExport,
+  fetchDirectoryPersonPickerKeysForExport,
   applyQuestionDefaults,
+  resolveDirectoryPersonPickerRefsForExport,
   sha256Json,
 } from '@/lib/admin/exportPayload'
 import { recordAuditAction } from '@/app/admin/actions/audit'
@@ -63,12 +66,21 @@ export async function exportConfigurationsAction(input: {
     }
   }
 
-  const sections = await fetchSectionsForExport(admin, allIds)
+  const [sections, persons] = await Promise.all([
+    fetchSectionsForExport(admin, allIds),
+    fetchPersonsForExport(admin, allIds),
+  ])
   const sectionsByConfig = new Map<string, typeof sections>()
   for (const s of sections) {
     const cid = s.configuration_id as string
     if (!sectionsByConfig.has(cid)) sectionsByConfig.set(cid, [])
     sectionsByConfig.get(cid)!.push(s)
+  }
+  const personsByConfig = new Map<string, typeof persons>()
+  for (const p of persons) {
+    const cid = p.configuration_id as string
+    if (!personsByConfig.has(cid)) personsByConfig.set(cid, [])
+    personsByConfig.get(cid)!.push(p)
   }
 
   // Fetch question defaults from the active template for export substitution
@@ -79,6 +91,9 @@ export async function exportConfigurationsAction(input: {
     .maybeSingle()
   const questionDefaults = activeTmpl
     ? await fetchQuestionDefaultsForExport(admin, activeTmpl.id as string)
+    : []
+  const directoryPersonKeys = activeTmpl
+    ? await fetchDirectoryPersonPickerKeysForExport(admin, activeTmpl.id as string)
     : []
 
   const configurations = configs.map(row => {
@@ -92,19 +107,27 @@ export async function exportConfigurationsAction(input: {
       sub_location: sub_location ?? null,
       client_contact: client_contact ?? null,
       staff_user: staff_user ?? null,
-      sections: (sectionsByConfig.get(row.id as string) ?? []).map(sec => ({
-        id: sec.id,
-        configuration_id: sec.configuration_id,
-        section_id: sec.section_id,
-        data: applyQuestionDefaults(
-          (sec.data as Record<string, unknown>) ?? {},
+      persons: (personsByConfig.get(row.id as string) ?? []),
+      sections: (sectionsByConfig.get(row.id as string) ?? []).map(sec => {
+        const raw = (sec.data as Record<string, unknown>) ?? {}
+        const withDefaults = applyQuestionDefaults(raw, sec.section_id as string, questionDefaults)
+        const persons = personsByConfig.get(row.id as string) ?? []
+        const data = resolveDirectoryPersonPickerRefsForExport(
           sec.section_id as string,
-          questionDefaults,
-        ),
-        is_complete: sec.is_complete,
-        completed_by: sec.completed_by,
-        saved_at: sec.saved_at,
-      })),
+          withDefaults,
+          persons as { id: string; full_name: string; email: string }[],
+          directoryPersonKeys,
+        )
+        return {
+          id: sec.id,
+          configuration_id: sec.configuration_id,
+          section_id: sec.section_id,
+          data,
+          is_complete: sec.is_complete,
+          completed_by: sec.completed_by,
+          saved_at: sec.saved_at,
+        }
+      }),
     }
   })
 

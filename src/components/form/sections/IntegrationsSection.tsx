@@ -5,7 +5,7 @@ import FormField from '@/components/form/shared/FormField'
 import CheckpointList from '@/components/form/shared/CheckpointList'
 import SectionDivider from '@/components/form/shared/SectionDivider'
 
-import type { ConfigPhase } from '@/types'
+import type { ConfigPhase, WorkflowQuestion, IntegrationBlockOptions } from '@/types'
 import { ArrowRight, Loader2 } from 'lucide-react'
 
 interface IntegrationsSectionProps {
@@ -16,118 +16,57 @@ interface IntegrationsSectionProps {
   isComplete?: boolean
   industry?: string | null
   phase?: ConfigPhase
+  questions?: WorkflowQuestion[]
 }
 
 type IntegrationStatus = 'not-required' | 'required' | 'in-scope'
 
-const INTEGRATIONS = [
+const STATUS_OPTIONS: { val: IntegrationStatus; label: string; bg: string; color: string; border: string }[] = [
   {
-    id: 'sso',
-    badge: 'SSO / Identity',
-    badgeColor: '#0057B8',
-    badgeBg: 'rgba(0,129,255,0.10)',
-    badgeBorder: 'rgba(0,129,255,0.25)',
-    desc: 'Identity provider configuration for Orchestrator user authentication.',
-    fields: [
-      { id: 'idp',            label: 'Identity provider (IdP)',     placeholder: 'e.g. Azure Active Directory, Okta, Google Workspace, ADFS' },
-      { id: 'protocol',       label: 'SSO protocol',                placeholder: 'e.g. SAML 2.0, OpenID Connect (OIDC), OAuth 2.0' },
-      { id: 'tenant',         label: 'Tenant ID / domain',          placeholder: 'e.g. contoso.onmicrosoft.com' },
-      { id: 'provisioning',   label: 'User provisioning method',    placeholder: 'e.g. Manual invite, SCIM auto-provisioning, JIT' },
-      { id: 'role_mapping',   label: 'Group / role mapping',        placeholder: 'How do IdP groups map to Orchestrator roles?', textarea: true },
-      { id: 'it_contact',     label: 'IT contact for SSO setup',    placeholder: 'Name, email, phone' },
-    ],
-    checkpoints: [
-      { id: 'metadata_provided',    label: 'IdP metadata / federation XML provided to MBody AI' },
-      { id: 'app_registered',       label: 'Orchestrator SAML / OIDC app registered in client IdP' },
-      { id: 'role_mapping_tested',  label: 'Group-to-role mapping documented and tested' },
-      { id: 'test_login',           label: 'Test user login confirmed end-to-end' },
-      { id: 'scim_tested',          label: 'SCIM provisioning tested (if applicable)' },
-      { id: 'mfa_confirmed',        label: 'MFA policy confirmed and compatible' },
-    ],
+    val:    'required',
+    label:  'Required',
+    bg:     'rgba(0,129,255,0.08)',
+    color:  'var(--electric-blue)',
+    border: '1px solid rgba(0,129,255,0.35)',
   },
   {
-    id: 'task',
-    badge: 'Task management',
-    badgeColor: '#7B1FA2',
-    badgeBg: 'rgba(165,42,225,0.08)',
-    badgeBorder: 'rgba(165,42,225,0.25)',
-    desc: 'Integration with client task or work order management systems.',
-    fields: [
-      { id: 'platform',       label: 'Task / CAFM / CMMS platform', placeholder: 'e.g. ServiceNow, Planon, Maximo, Jira Service Management' },
-      { id: 'method',         label: 'Integration method',           placeholder: 'e.g. REST API, webhook, email-to-ticket, CSV export' },
-      { id: 'endpoint',       label: 'API endpoint / base URL',      placeholder: 'e.g. https://client.service-now.com/api/...' },
-      { id: 'auth',           label: 'Authentication method',        placeholder: 'e.g. API key, OAuth 2.0 client credentials' },
-      { id: 'events',         label: 'Which robot events create tasks?', placeholder: 'e.g. Maintenance alert → work order; stuck robot → incident ticket', textarea: true },
-      { id: 'priority_map',   label: 'Task priority mapping',        placeholder: 'e.g. Orchestrator Critical → P1; High → P2', textarea: true },
-      { id: 'routing',        label: 'Task assignee / queue routing', placeholder: "e.g. All robot tasks → 'Facilities Tech' queue at relevant site", textarea: true },
-      { id: 'status_sync',    label: 'Completion status sync back?', placeholder: 'e.g. Yes — closed tasks update robot maintenance log' },
-    ],
-    checkpoints: [
-      { id: 'credentials',      label: 'Task platform API credentials / webhook URL provided' },
-      { id: 'mapping_agreed',   label: 'Event-to-task mapping documented and agreed' },
-      { id: 'priority_tested',  label: 'Priority mapping tested end-to-end' },
-      { id: 'routing_verified', label: 'Task routing to correct site queue verified' },
-      { id: 'sync_tested',      label: 'Completion status sync tested (if bidirectional)' },
-    ],
+    val:    'in-scope',
+    label:  'In scope — TBC',
+    bg:     'rgba(245,124,0,0.08)',
+    color:  '#E65100',
+    border: '1px solid rgba(245,124,0,0.35)',
   },
   {
-    id: 'facilities',
-    badge: 'Facilities Management',
-    badgeColor: '#1B6B45',
-    badgeBg: 'rgba(27,138,90,0.10)',
-    badgeBorder: 'rgba(27,138,90,0.25)',
-    desc: 'Integration with elevators and access control areas.',
-    fields: [
-      { id: 'elevator_vendor',  label: 'Elevator system / vendor',           placeholder: 'e.g. KONE, Otis, Schindler — model and integration capability' },
-      { id: 'access_control',   label: 'Access control / door system',       placeholder: 'e.g. Genetec, Lenel, HID, Brivo' },
-      { id: 'method',           label: 'Integration method',                 placeholder: 'e.g. REST API, BACnet, vendor SDK, cloud webhook' },
-      { id: 'auth',             label: 'Authentication method',              placeholder: 'e.g. API key, OAuth 2.0, certificate-based' },
-      { id: 'elevator_zones',   label: 'Floors / zones requiring elevator',  placeholder: 'List sites and floors where robots need elevator integration', textarea: true },
-      { id: 'door_zones',       label: 'Doors / restricted areas',           placeholder: 'List doors, gates, or zones robots need to traverse', textarea: true },
-      { id: 'failover',         label: 'Failover behaviour',                 placeholder: 'e.g. If elevator API fails, robot waits at landing and alerts site manager' },
-      { id: 'facilities_contact', label: 'Facilities / building services contact', placeholder: 'Name, email, phone — owns the elevator / access system' },
-    ],
-    checkpoints: [
-      { id: 'elevator_confirmed',   label: 'Elevator vendor and integration capability confirmed' },
-      { id: 'access_confirmed',     label: 'Access control system and integration method confirmed' },
-      { id: 'credentials_provided', label: 'API credentials / certificates provided' },
-      { id: 'zones_mapped',         label: 'Floors and zones requiring integration mapped per site' },
-      { id: 'test_verified',        label: 'Test ride / door-open sequence verified end-to-end' },
-      { id: 'failover_tested',      label: 'Failover behaviour configured and tested' },
-    ],
-  },
-  {
-    id: 'other',
-    badge: 'Other integrations',
-    badgeColor: 'var(--text-muted)',
-    badgeBg: 'var(--bg-elevated)',
-    badgeBorder: 'rgba(146,140,227,0.2)',
-    desc: 'Client-requested integrations not covered above.',
-    fields: [
-      { id: 'platforms',  label: 'Additional platform(s)',       placeholder: 'e.g. Power BI, Tableau, BACnet BMS, Genetec, Teams, Slack' },
-      { id: 'purpose',    label: 'Integration purpose',          placeholder: 'What data flows where, and why?', textarea: true },
-      { id: 'method',     label: 'Integration method',           placeholder: 'e.g. API, webhook, embedded dashboard, data feed' },
-      { id: 'contacts',   label: 'Technical contact for each',   placeholder: 'Name, system, email', textarea: true },
-    ],
-    checkpoints: [
-      { id: 'scoped',       label: 'Additional integrations scoped and prioritised' },
-      { id: 'contacts_id',  label: 'Technical contacts identified per system' },
-      { id: 'added_to_plan',label: 'Integration requirements added to project plan' },
-    ],
+    val:    'not-required',
+    label:  'Not required',
+    bg:     'var(--bg-elevated)',
+    color:  'var(--text-muted)',
+    border: '1px solid rgba(146,140,227,0.2)',
   },
 ]
 
-const OVERALL_CHECKPOINTS = [
-  { id: 'all_identified',   label: 'All required integrations identified and scoped' },
-  { id: 'owners_confirmed', label: 'Integration owners confirmed on client side' },
-  { id: 'security_review',  label: 'Security / InfoSec review completed for each integration' },
-  { id: 'dpa_signed',       label: 'Data sharing agreements / DPA addendums signed' },
-  { id: 'staging_tested',   label: 'Full integration test completed in staging environment' },
-  { id: 'golive_signoff',   label: 'Go-live sign-off obtained from client IT' },
-]
+export default function IntegrationsSection({
+  data = {},
+  onSave,
+  onAutoSave,
+  isSaving,
+  phase,
+  questions = [],
+}: IntegrationsSectionProps) {
+  // ── Derive integration blocks from questions ────────────────────────────────
+  const integrationBlocks = questions
+    .filter(q => q.field_type === 'integration_block' && q.active)
+    .sort((a, b) => a.sort_order - b.sort_order)
 
-export default function IntegrationsSection({ data = {}, onSave, onAutoSave, isSaving, phase }: IntegrationsSectionProps) {
+  // ── Derive overall checkpoints from questions ───────────────────────────────
+  const overallCheckpoints = questions
+    .filter(q => q.field_type === 'checkpoint' && q.active)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map(q => ({ id: q.field_key, label: q.label ?? q.field_key }))
+
   const isPost = phase === 'post'
+
+  // ── State ───────────────────────────────────────────────────────────────────
   const [statuses, setStatuses] = useState<Record<string, IntegrationStatus>>(
     (data.statuses as Record<string, IntegrationStatus>) ?? {}
   )
@@ -149,20 +88,21 @@ export default function IntegrationsSection({ data = {}, onSave, onAutoSave, isS
     setChecked((data.checkpoints as Record<string, boolean>) ?? {})
   }, [data])
 
-  function setStatus(id: string, status: IntegrationStatus) {
-    const updated = { ...statuses, [id]: status }
+  // ── Handlers ────────────────────────────────────────────────────────────────
+  function setStatus(fieldKey: string, status: IntegrationStatus) {
+    const updated = { ...statuses, [fieldKey]: status }
     setStatuses(updated)
     onAutoSave?.({ statuses: updated, int_fields: intFields, int_checked: intChecked, checkpoints: checked })
   }
 
-  function setIntField(intId: string, fieldId: string, value: string) {
-    const updated = { ...intFields, [intId]: { ...(intFields[intId] ?? {}), [fieldId]: value } }
+  function setIntField(fieldKey: string, subKey: string, value: string) {
+    const updated = { ...intFields, [fieldKey]: { ...(intFields[fieldKey] ?? {}), [subKey]: value } }
     setIntFields(updated)
     onAutoSave?.({ statuses, int_fields: updated, int_checked: intChecked, checkpoints: checked })
   }
 
-  function toggleIntCheck(intId: string, checkId: string, value: boolean) {
-    const updated = { ...intChecked, [intId]: { ...(intChecked[intId] ?? {}), [checkId]: value } }
+  function toggleIntCheck(fieldKey: string, checkKey: string, value: boolean) {
+    const updated = { ...intChecked, [fieldKey]: { ...(intChecked[fieldKey] ?? {}), [checkKey]: value } }
     setIntChecked(updated)
     onAutoSave?.({ statuses, int_fields: intFields, int_checked: updated, checkpoints: checked })
   }
@@ -171,6 +111,7 @@ export default function IntegrationsSection({ data = {}, onSave, onAutoSave, isS
     onSave({ statuses, int_fields: intFields, int_checked: intChecked, checkpoints: checked }, isComplete)
   }
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div>
       <p style={{ fontSize: '13px', color: 'var(--text-body)', lineHeight: 1.65, marginBottom: '20px' }}>
@@ -178,150 +119,189 @@ export default function IntegrationsSection({ data = {}, onSave, onAutoSave, isS
         task management, facilities, and any other client-requested platforms.
       </p>
 
-      {INTEGRATIONS.map(int => {
-        const status = statuses[int.id] ?? 'not-required'
-        const isActive = status !== 'not-required'
+      {integrationBlocks.length === 0 ? (
+        <div style={{
+          padding: '20px',
+          borderRadius: '8px',
+          background: 'var(--bg-elevated)',
+          border: '1px solid rgba(146,140,227,0.2)',
+          textAlign: 'center',
+        }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+            No integrations configured
+          </p>
+        </div>
+      ) : (
+        integrationBlocks.map(question => {
+          const opts = question.options as unknown as IntegrationBlockOptions
+          const fieldKey = question.field_key
+          const status = statuses[fieldKey] ?? 'not-required'
+          const isActive = status !== 'not-required'
 
-        return (
-          <div
-            key={int.id}
-            style={{
-              border: 'var(--border-subtle)',
-              borderRadius: '8px',
-              background: 'var(--bg-elevated)',
-              marginBottom: '10px',
-              overflow: 'hidden',
-              transition: 'border-color 0.2s',
-            }}
-          >
-            {/* Integration header */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              padding: '12px 14px',
-              borderBottom: isActive ? 'var(--border-subtle)' : 'none',
-              background: 'var(--bg-surface)',
-            }}>
-              <span style={{
-                fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em',
-                padding: '4px 10px', borderRadius: '20px',
-                textTransform: 'uppercase', whiteSpace: 'nowrap',
-                color: int.badgeColor,
-                background: int.badgeBg,
-                border: `1px solid ${int.badgeBorder}`,
+          return (
+            <div
+              key={question.id}
+              style={{
+                border: `1px solid rgba(146,140,227,0.2)`,
+                borderRadius: '8px',
+                background: 'var(--bg-elevated)',
+                marginBottom: '10px',
+                overflow: 'hidden',
+                transition: 'border-color 0.2s',
+              }}
+            >
+              {/* Integration header */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 14px',
+                borderBottom: isActive ? '1px solid rgba(146,140,227,0.12)' : 'none',
+                background: 'var(--bg-surface)',
               }}>
-                {int.badge}
-              </span>
-              <span style={{ fontSize: '12px', color: 'var(--text-body)', flex: 1 }}>
-                {int.desc}
-              </span>
-            </div>
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                  padding: '4px 10px',
+                  borderRadius: '20px',
+                  textTransform: 'uppercase',
+                  whiteSpace: 'nowrap',
+                  color: opts?.color ?? 'var(--text-muted)',
+                  background: opts?.bg ?? 'var(--bg-elevated)',
+                  border: `1px solid ${opts?.border ?? 'rgba(146,140,227,0.2)'}`,
+                }}>
+                  {question.label}
+                </span>
+                <span style={{ fontSize: '12px', color: 'var(--text-body)', flex: 1 }}>
+                  {opts?.description ?? ''}
+                </span>
+              </div>
 
-            {/* Status buttons */}
-            <div style={{ padding: '12px 14px 4px' }}>
-              <label style={{
-                display: 'block', fontSize: '11px', fontWeight: 600,
-                letterSpacing: '0.05em', textTransform: 'uppercase',
-                color: 'var(--text-muted)', marginBottom: '8px',
-              }}>
-                Integration required?
-              </label>
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                {([
-                  { val: 'required' as IntegrationStatus,     label: 'Required',        activeStyle: { background: 'rgba(0,129,255,0.08)', borderColor: 'rgba(0,129,255,0.4)', color: 'var(--electric-blue)' } },
-                  { val: 'in-scope' as IntegrationStatus,     label: 'In scope — TBC',  activeStyle: { background: 'rgba(245,124,0,0.08)', borderColor: 'rgba(245,124,0,0.35)', color: '#E65100' } },
-                  { val: 'not-required' as IntegrationStatus, label: 'Not required',    activeStyle: { background: 'var(--bg-elevated)', borderColor: 'rgba(146,140,227,0.2)', color: 'var(--text-muted)' } },
-                ]).map(btn => {
-                  const isActive = status === btn.val
-                  return (
-                    <button
-                      key={btn.val}
-                      onClick={() => setStatus(int.id, btn.val)}
-                      style={{
-                        fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em',
-                        padding: '5px 12px', borderRadius: '20px',
-                        cursor: 'pointer', fontFamily: 'var(--font-family)',
-                        transition: 'all 0.15s',
-                        background: 'var(--bg-surface)',
-                        border: `1.5px solid rgba(146,140,227,0.2)`,
+              {/* Status buttons */}
+              <div style={{ padding: '12px 14px 4px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-muted)',
+                  marginBottom: '8px',
+                }}>
+                  Integration required?
+                </label>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                  {STATUS_OPTIONS.map(btn => {
+                    const isSelected = status === btn.val
+                    return (
+                      <button
+                        key={btn.val}
+                        onClick={() => setStatus(fieldKey, btn.val)}
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          letterSpacing: '0.03em',
+                          padding: '5px 12px',
+                          borderRadius: '20px',
+                          cursor: 'pointer',
+                          fontFamily: 'var(--font-family)',
+                          transition: 'all 0.15s',
+                          background: isSelected ? btn.bg : 'var(--bg-surface)',
+                          border: isSelected ? btn.border : '1.5px solid rgba(146,140,227,0.2)',
+                          color: isSelected ? btn.color : 'var(--text-muted)',
+                        }}
+                      >
+                        {btn.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Integration body */}
+              {isActive && (
+                <div style={{ padding: '0 14px 14px' }}>
+                  {isPost ? (
+                    <>
+                      {(opts?.fields ?? []).map(f => (
+                        f.type === 'textarea' ? (
+                          <FormField
+                            key={f.key}
+                            label={f.label}
+                            type="textarea"
+                            rows={2}
+                            value={intFields[fieldKey]?.[f.key] ?? ''}
+                            onChange={v => setIntField(fieldKey, f.key, v)}
+                          />
+                        ) : f.type === 'select' ? (
+                          <FormField
+                            key={f.key}
+                            label={f.label}
+                            type="select"
+                            options={(f.options ?? []).map(o => ({ value: o, label: o }))}
+                            value={intFields[fieldKey]?.[f.key] ?? ''}
+                            onChange={v => setIntField(fieldKey, f.key, v)}
+                          />
+                        ) : (
+                          <FormField
+                            key={f.key}
+                            label={f.label}
+                            value={intFields[fieldKey]?.[f.key] ?? ''}
+                            onChange={v => setIntField(fieldKey, f.key, v)}
+                          />
+                        )
+                      ))}
+
+                      {(opts?.checkpoints ?? []).length > 0 && (
+                        <CheckpointList
+                          label="Integration checkpoints"
+                          checkpoints={(opts.checkpoints).map(cp => ({ id: cp.key, label: cp.label }))}
+                          checked={intChecked[fieldKey] ?? {}}
+                          onChange={(id, value) => toggleIntCheck(fieldKey, id, value)}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ padding: '10px 2px 4px' }}>
+                      <p style={{
+                        fontSize: '11px',
                         color: 'var(--text-muted)',
-                        ...(isActive ? btn.activeStyle : {}),
-                      }}
-                    >
-                      {btn.label}
-                    </button>
-                  )
-                })}
-              </div>
+                        margin: 0,
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        background: 'rgba(57,153,254,0.05)',
+                        border: '1px solid rgba(57,153,254,0.18)',
+                      }}>
+                        <span style={{ fontWeight: 600, color: 'var(--electric-blue)' }}>Scoped for Post-Deploy: </span>
+                        Full configuration details (credentials, endpoints, mappings) are collected
+                        in the Post-Deployment phase. Marking this as Required ensures it is prioritised.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+          )
+        })
+      )}
 
-            {/* Integration body — gate-only in pre_deploy; full config in post */}
-            {isActive && (
-              <div style={{ padding: '0 14px 14px' }}>
-                {isPost ? (
-                  <>
-                    {int.fields.map(f => (
-                      f.textarea ? (
-                        <FormField
-                          key={f.id}
-                          label={f.label}
-                          type="textarea"
-                          rows={2}
-                          placeholder={f.placeholder}
-                          value={intFields[int.id]?.[f.id] ?? ''}
-                          onChange={v => setIntField(int.id, f.id, v)}
-                        />
-                      ) : (
-                        <FormField
-                          key={f.id}
-                          label={f.label}
-                          placeholder={f.placeholder}
-                          value={intFields[int.id]?.[f.id] ?? ''}
-                          onChange={v => setIntField(int.id, f.id, v)}
-                        />
-                      )
-                    ))}
+      {overallCheckpoints.length > 0 && (
+        <>
+          <SectionDivider label="Overall sign-off" />
 
-                    <CheckpointList
-                      label="Integration checkpoints"
-                      checkpoints={int.checkpoints}
-                      checked={intChecked[int.id] ?? {}}
-                      onChange={(id, value) => toggleIntCheck(int.id, id, value)}
-                    />
-                  </>
-                ) : (
-                  <div style={{
-                    padding: '10px 2px 4px',
-                  }}>
-                    <p style={{
-                      fontSize: '11px', color: 'var(--text-muted)', margin: 0,
-                      padding: '8px 12px', borderRadius: '6px',
-                      background: 'rgba(57,153,254,0.05)',
-                      border: '1px solid rgba(57,153,254,0.18)',
-                    }}>
-                      <span style={{ fontWeight: 600, color: 'var(--electric-blue)' }}>Scoped for Post-Deploy: </span>
-                      Full configuration details (credentials, endpoints, mappings) are collected
-                      in the Post-Deployment phase. Marking this as Required ensures it is prioritised.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )
-      })}
-
-      <SectionDivider label="Overall sign-off" />
-
-      <CheckpointList
-        label="Overall integration sign-off"
-        checkpoints={OVERALL_CHECKPOINTS}
-        checked={checked}
-        onChange={(id, value) => {
-          const updated = { ...checked, [id]: value }
-          setChecked(updated)
-          onAutoSave?.({ statuses, int_fields: intFields, int_checked: intChecked, checkpoints: updated })
-        }}
-      />
+          <CheckpointList
+            label="Overall integration sign-off"
+            checkpoints={overallCheckpoints}
+            checked={checked}
+            onChange={(id, value) => {
+              const updated = { ...checked, [id]: value }
+              setChecked(updated)
+              onAutoSave?.({ statuses, int_fields: intFields, int_checked: intChecked, checkpoints: updated })
+            }}
+          />
+        </>
+      )}
 
       {/* Save actions */}
       <div className="flex flex-col">
@@ -348,7 +328,7 @@ export default function IntegrationsSection({ data = {}, onSave, onAutoSave, isS
             items-center
             justify-center
             gap-2
-            ${isSaving ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:border-slate-400"}
+            ${isSaving ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:border-slate-400'}
           `}
         >
           {isSaving ? (
@@ -357,7 +337,7 @@ export default function IntegrationsSection({ data = {}, onSave, onAutoSave, isS
               Saving...
             </>
           ) : (
-            "Save draft"
+            'Save draft'
           )}
         </button>
 
@@ -380,7 +360,7 @@ export default function IntegrationsSection({ data = {}, onSave, onAutoSave, isS
             shadow-md
             bg-violet-500
             hover:bg-violet-700
-            ${isSaving ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}
+            ${isSaving ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}
           `}
         >
           {isSaving ? (

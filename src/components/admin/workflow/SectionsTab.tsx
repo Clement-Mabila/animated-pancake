@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import {
   Plus, Pencil, Trash2, X, ChevronUp, ChevronDown, MoreHorizontal,
   AlignLeft, List, ToggleRight, Hash, Type, ListFilter, GripVertical, RotateCcw, Undo2,
+  CheckSquare, Users, CalendarClock, Blocks, UserCog,
 } from 'lucide-react'
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor,
@@ -60,6 +61,11 @@ const FIELD_TYPE_CONFIG: Record<string, FieldCfg> = {
   multiselect: { color: '#0081FF', bg: 'rgba(0,129,255,0.15)',   icon: List        },
   boolean:     { color: '#22C55E', bg: 'rgba(34,197,94,0.15)',   icon: ToggleRight },
   number:      { color: '#F59E0B', bg: 'rgba(245,158,11,0.15)',  icon: Hash        },
+  checkpoint:                { color: '#22C55E', bg: 'rgba(34,197,94,0.15)',    icon: CheckSquare   },
+  orchestrator_user_selector:{ color: '#A52AE1', bg: 'rgba(165,42,225,0.15)',  icon: Users         },
+  schedule_amend_selector:   { color: '#0081FF', bg: 'rgba(0,129,255,0.15)',   icon: CalendarClock },
+  integration_block:         { color: '#E65100', bg: 'rgba(245,124,0,0.15)',   icon: Blocks        },
+  contact_picker:            { color: '#7B1FA2', bg: 'rgba(123,31,162,0.15)',  icon: UserCog       },
 }
 
 const DEFAULT_FIELD_CFG: FieldCfg = {

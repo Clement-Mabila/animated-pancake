@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { Check } from 'lucide-react'
 import { PHASE_ORDER, PHASE_LABELS } from '@/lib/phases'
 import type { ConfigPhase } from '@/types'
 
@@ -29,18 +30,20 @@ const PHASE_COLORS: Record<ConfigPhase, string> = {
 /* ── Status pill ────────────────────────────────────────────── */
 const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {
   draft:           { bg: 'rgba(245,158,11,0.15)',  color: '#F59E0B', label: 'Draft'    },
-  client_complete: { bg: 'rgba(0,129,255,0.15)',   color: '#0081FF', label: 'Client ✓' },
-  mbody_complete:  { bg: 'rgba(146,140,227,0.15)', color: '#928CE3', label: 'MBody ✓'  },
+  client_complete: { bg: 'rgba(0,129,255,0.15)',   color: '#0081FF', label: 'Client complete' },
+  mbody_complete:  { bg: 'rgba(146,140,227,0.15)', color: '#928CE3', label: 'MBody complete' },
   live:            { bg: 'rgba(34,197,94,0.15)',   color: '#22C55E', label: 'Live'      },
 }
 
 function StatusPill({ status }: { status: string }) {
   const s = STATUS_STYLES[status] ?? { bg: 'rgba(146,140,227,0.1)', color: '#928CE3', label: status }
+  const showCheck = status === 'client_complete' || status === 'mbody_complete'
   return (
     <span
-      className="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
+      className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
       style={{ backgroundColor: s.bg, color: s.color }}
     >
+      {showCheck && <Check className="w-2.5 h-2.5 shrink-0" strokeWidth={2.5} aria-hidden />}
       {s.label}
     </span>
   )

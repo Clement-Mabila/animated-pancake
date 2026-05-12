@@ -234,7 +234,14 @@ export async function fetchConfigurationDetail(id: string) {
     .single()
   if (error) return null
   const { data: sections } = await admin.from('config_sections').select('*').eq('configuration_id', id)
-  return { configuration: data, sections: sections ?? [] }
+  const { data: questions } = await admin
+    .from('workflow_questions')
+    .select('*')
+    .eq('template_id', (data as { template_id: string }).template_id)
+    .eq('is_deleted', false)
+    .eq('active', true)
+    .order('sort_order')
+  return { configuration: data, sections: sections ?? [], questions: questions ?? [] }
 }
 
 export async function fetchClientContactsList() {

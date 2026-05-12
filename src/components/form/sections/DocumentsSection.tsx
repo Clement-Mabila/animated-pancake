@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import CheckpointList from '@/components/form/shared/CheckpointList'
 import SectionDivider from '@/components/form/shared/SectionDivider'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
+
+import type { WorkflowQuestion } from '@/types'
 
 interface DocumentsSectionProps {
   data?:        Record<string, unknown>
@@ -13,6 +15,7 @@ interface DocumentsSectionProps {
   isComplete?:  boolean
   phase?:       string
   industry?:    string | null
+  questions?:   WorkflowQuestion[]
 }
 
 type DocStatus = 'not_requested' | 'requested' | 'received'
@@ -20,7 +23,7 @@ type DocStatus = 'not_requested' | 'requested' | 'received'
 const STATUS_OPTIONS: { value: DocStatus; label: string; color: string; bg: string; border: string }[] = [
   { value: 'not_requested', label: 'Not requested', color: 'var(--text-muted)',  bg: 'var(--bg-elevated)',         border: 'rgba(146,140,227,0.2)' },
   { value: 'requested',     label: 'Requested',     color: '#E65100',            bg: 'rgba(245,124,0,0.08)',       border: 'rgba(245,124,0,0.35)'  },
-  { value: 'received',      label: 'Received ✓',    color: '#16A34A',            bg: 'rgba(34,197,94,0.08)',       border: 'rgba(34,197,94,0.35)'  },
+  { value: 'received',      label: 'Received',    color: '#16A34A',            bg: 'rgba(34,197,94,0.08)',       border: 'rgba(34,197,94,0.35)'  },
 ]
 
 const DOCUMENTS = [
@@ -62,7 +65,11 @@ export default function DocumentsSection({
   onAutoSave,
   isSaving,
   isComplete,
+  questions,
 }: DocumentsSectionProps) {
+  const resolvedCheckpoints = questions && questions.some(q => q.field_type === 'checkpoint')
+    ? questions.filter(q => q.field_type === 'checkpoint' && q.active).sort((a, b) => a.sort_order - b.sort_order).map(q => ({ id: q.field_key, label: q.label ?? q.field_key }))
+    : CHECKPOINTS
   const [statuses, setStatuses] = useState<Record<string, DocStatus>>(
     (data.statuses as Record<string, DocStatus>) ?? {}
   )
@@ -193,7 +200,13 @@ export default function DocumentsSection({
                   color: statusMeta.color,
                   background: statusMeta.bg,
                   border: `1px solid ${statusMeta.border}`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
                 }}>
+                  {status === 'received' && (
+                    <Check size={12} strokeWidth={2.5} aria-hidden style={{ flexShrink: 0 }} />
+                  )}
                   {statusMeta.label}
                 </div>
               </div>
@@ -240,8 +253,14 @@ export default function DocumentsSection({
                         border:     status === opt.value
                           ? `1.5px solid ${opt.border}`
                           : '1.5px solid rgba(146,140,227,0.15)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
                       }}
                     >
+                      {opt.value === 'received' && (
+                        <Check size={12} strokeWidth={2.5} aria-hidden style={{ flexShrink: 0 }} />
+                      )}
                       {opt.label}
                     </button>
                   ))}
@@ -272,7 +291,7 @@ export default function DocumentsSection({
       <SectionDivider label="Completion checkpoints" />
 
       <CheckpointList
-        checkpoints={CHECKPOINTS}
+        checkpoints={resolvedCheckpoints}
         checked={checked}
         onChange={(id, value) => {
           const updated = { ...checked, [id]: value }

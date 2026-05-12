@@ -344,10 +344,13 @@ export async function reorderWorkflowSectionsAction(
 // ── Questions ────────────────────────────────────────────────
 
 const questionOptionSchema = z.object({
-  value: z.string().min(1).max(128),
-  label: z.string().min(1).max(256),
-  hint:  z.string().max(128).optional().nullable(),
-})
+  value:    z.string().max(128).optional(),
+  label:    z.string().min(1).max(256),
+  hint:     z.string().max(128).optional().nullable(),
+  id:       z.string().max(64).optional(),
+  category: z.string().max(64).optional(),
+  required: z.boolean().optional(),
+}).passthrough()
 
 const questionSchema = z.object({
   id:                    z.string().uuid().optional(),
@@ -356,7 +359,7 @@ const questionSchema = z.object({
   fieldKey:              z.string().min(1).max(64).regex(/^[a-z0-9_]+$/),
   label:                 z.string().max(256).optional().nullable(),
   placeholder:           z.string().max(512).optional().nullable(),
-  fieldType:             z.enum(['text', 'textarea', 'select', 'multiselect', 'boolean', 'number', 'checkpoint']),
+  fieldType:             z.enum(['text', 'textarea', 'select', 'multiselect', 'boolean', 'number', 'checkpoint', 'orchestrator_user_selector', 'schedule_amend_selector', 'integration_block', 'contact_picker']),
   visibleInPhases:       z.array(z.enum(['early', 'pre_deploy', 'deploy', 'post'])).min(1),
   options:               z.array(questionOptionSchema).optional().nullable(),
   isPartial:             z.boolean(),

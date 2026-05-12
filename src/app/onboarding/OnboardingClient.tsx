@@ -7,11 +7,11 @@ import ToastContainer from '@/components/ui/ToastContainer'
 import DynamicSection from '@/components/form/DynamicSection'
 import FleetSection from '@/components/form/sections/FleetSection'
 import ContactsSection from '@/components/form/sections/ContactsSection'
-import AlertsSection from '@/components/form/sections/AlertsSection'
 import IntegrationsSection from '@/components/form/sections/IntegrationsSection'
 import DocumentsSection from '@/components/form/sections/DocumentsSection'
 import DeployChecklist from '@/components/form/DeployChecklist'
 import { useState, useEffect, useRef } from 'react'
+import { Check } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
 import { useToast } from '@/context/ToastContext'
 import { PHASE_LABELS, PHASE_ORDER, getNextPhase, getPreviousPhase } from '@/lib/phases'
@@ -114,7 +114,7 @@ export default function OnboardingClient({ dbSections, phaseSections, questions,
     isComplete: boolean
   ) {
     await saveSection(sectionId, data, isComplete, identity?.email ?? 'unknown')
-    showToast(isComplete ? 'complete' : 'draft', isComplete ? 'Section complete ✓' : 'Draft saved')
+    showToast(isComplete ? 'complete' : 'draft', isComplete ? 'Section complete' : 'Draft saved')
 
     if (isComplete) {
       const idx  = activeSections.findIndex(s => s.id === sectionId)
@@ -270,7 +270,11 @@ export default function OnboardingClient({ dbSections, phaseSections, questions,
                           : { border: '1.5px solid rgba(146,140,227,0.2)' }
                         }
                       >
-                        {isDone ? '✓' : i + 1}
+                        {isDone ? (
+                          <Check className="w-4 h-4" strokeWidth={2.5} aria-hidden />
+                        ) : (
+                          i + 1
+                        )}
                       </div>
                       <span className={`text-xs font-medium text-center tracking-wide leading-snug ${
                         isDone ? 'text-soft-lavender' : 'text-muted'
@@ -289,6 +293,11 @@ export default function OnboardingClient({ dbSections, phaseSections, questions,
               {configuration.phase === 'deploy' && (
                 <DeployChecklist
                   configId={configuration.id}
+                  templateId={
+                    configuration.workflow_template_id ??
+                    templateId ??
+                    '11111111-1111-1111-1111-111111111111'
+                  }
                   initialChecklist={(configuration.deploy_checklist as Record<string, boolean>) ?? {}}
                   onProgressChange={(allComplete) => setDeployAllComplete(allComplete)}
                 />
@@ -301,12 +310,14 @@ export default function OnboardingClient({ dbSections, phaseSections, questions,
 
                 const sectionQs = questions.filter(q => q.section_slug === sectionId)
                 const dynProps  = {
-                  data:        sectionData?.data ?? {},
-                  onSave:      (d: Record<string, unknown>, c: boolean) => handleSave(sectionId, d, c),
-                  onAutoSave:  (d: Record<string, unknown>) => handleAutoSave(sectionId, d),
-                  isSaving:    saving,
-                  isComplete:  sectionData?.is_complete ?? false,
+                  data:            sectionData?.data ?? {},
+                  onSave:          (d: Record<string, unknown>, c: boolean) => handleSave(sectionId, d, c),
+                  onAutoSave:      (d: Record<string, unknown>) => handleAutoSave(sectionId, d),
+                  isSaving:        saving,
+                  isComplete:      sectionData?.is_complete ?? false,
                   industry,
+                  configurationId: configuration.id,
+                  locationId:      configuration.location_id ?? undefined,
                 }
 
                 const child = (() => {
@@ -318,14 +329,14 @@ export default function OnboardingClient({ dbSections, phaseSections, questions,
                     case 'fsm':
                     case 'insight':
                     case 'timezone':
+                    case 'alerts':
                       return <DynamicSection sectionSlug={sectionId} questions={sectionQs} phase={phase} description={s.description} {...dynProps} />
 
-                    // ── Custom sections ───────────────────────────────
-                    case 'fleet':        return <FleetSection        {...dynProps} locationId={configuration.location_id ?? undefined} />
-                    case 'contacts':     return <ContactsSection     {...dynProps} />
-                    case 'alerts':       return <AlertsSection       {...dynProps} phase={phase} />
-                    case 'integrations': return <IntegrationsSection {...dynProps} phase={phase} />
-                    case 'docs':         return <DocumentsSection    {...dynProps} />
+                    // ── Custom sections (complex UI, checkpoints from DB) ──
+                    case 'fleet':        return <FleetSection        {...dynProps} questions={sectionQs} locationId={configuration.location_id ?? undefined} />
+                    case 'contacts':     return <ContactsSection     {...dynProps} questions={sectionQs} configurationId={configuration.id} />
+                    case 'integrations': return <IntegrationsSection {...dynProps} questions={sectionQs} phase={phase} />
+                    case 'docs':         return <DocumentsSection    {...dynProps} questions={sectionQs} />
                   }
                 })()
 
@@ -336,7 +347,7 @@ export default function OnboardingClient({ dbSections, phaseSections, questions,
                     number={showAll ? s.number : idx + 1}
                     title={s.title}
                     subtitle={s.subtitle}
-                    checkpointCount={s.checkpoints}
+                    checkpointCount={sectionQs.filter(q => q.field_type === 'checkpoint').length || (s.checkpoints as number)}
                     isComplete={sectionData?.is_complete ?? false}
                     open={openSectionId === sectionId}
                     onToggle={() => toggleSection(sectionId)}
@@ -369,16 +380,29 @@ export default function OnboardingClient({ dbSections, phaseSections, questions,
                       : '1px solid rgba(146,140,227,0.15)',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-                      <div>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', minWidth: 0 }}>
+                        {allComplete && (
+                          <Check
+                            size={18}
+                            strokeWidth={2.5}
+                            aria-hidden
+                            style={{
+                              flexShrink: 0,
+                              marginTop: '1px',
+                              color: isDeployPhase ? '#059669' : 'var(--electric-blue)',
+                            }}
+                          />
+                        )}
+                        <div>
                         <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-heading)', marginBottom: '3px' }}>
                           {isDeployPhase
                             ? allComplete
-                              ? 'All 5 deploy tasks complete ✓'
+                              ? 'All 5 deploy tasks complete'
                               : '5 checklist tasks must be completed before handover'
                             : allComplete
                               ? isLastPhase
-                                ? 'Configuration complete ✓'
-                                : `All ${activeSections.length} sections complete ✓`
+                                ? 'Configuration complete'
+                                : `All ${activeSections.length} sections complete`
                               : `${completedSections} of ${activeSections.length} sections complete`}
                         </div>
                         {!isLastPhase && nextPhase && (
@@ -386,6 +410,7 @@ export default function OnboardingClient({ dbSections, phaseSections, questions,
                             Next: {PHASE_LABELS[nextPhase]} · {isDeployPhase ? nextSections : nextSections} section{nextSections !== 1 ? 's' : ''}
                           </div>
                         )}
+                        </div>
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>

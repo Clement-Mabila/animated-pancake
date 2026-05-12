@@ -1,34 +1,53 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import {
+  Bot,
+  CalendarDays,
+  ClipboardCheck,
+  ShieldCheck,
+  GraduationCap,
+  Check,
+  Loader2,
+  CheckCircle2,
+} from 'lucide-react'
 import { getWorkflowDeployTasks } from '@/lib/supabase/queries'
 import { updateDeployChecklistAction } from '@/app/actions/session'
 import type { WorkflowDeployTask } from '@/types'
 
 interface DeployChecklistProps {
   configId:         string
+  /** Must match the workflow template used for questions / admin deploy tasks */
+  templateId:       string
   initialChecklist: Record<string, boolean>
   onProgressChange: (allComplete: boolean, checked: number, total: number) => void
 }
 
-const TASK_ICONS: Record<string, string> = {
-  ingest_robots:             '🤖',
-  report_cadence:            '📅',
-  robot_register_validation: '✓',
-  validate_access_controls:  '🔐',
-  orchestrator_training:     '🎓',
+const TASK_ICONS: Record<string, React.ElementType> = {
+  ingest_robots:             Bot,
+  report_cadence:            CalendarDays,
+  robot_register_validation: ClipboardCheck,
+  validate_access_controls:  ShieldCheck,
+  orchestrator_training:     GraduationCap,
 }
 
-const TASK_COLORS: Record<string, { dot: string; bg: string; border: string }> = {
-  ingest_robots:             { dot: '#3999FE', bg: 'rgba(57,153,254,0.08)',   border: 'rgba(57,153,254,0.25)'  },
-  report_cadence:            { dot: '#A52AE1', bg: 'rgba(165,42,225,0.08)',   border: 'rgba(165,42,225,0.25)'  },
-  robot_register_validation: { dot: '#16A34A', bg: 'rgba(34,197,94,0.08)',    border: 'rgba(34,197,94,0.25)'   },
-  validate_access_controls:  { dot: '#E65100', bg: 'rgba(245,124,0,0.08)',    border: 'rgba(245,124,0,0.25)'   },
-  orchestrator_training:     { dot: '#7B1FA2', bg: 'rgba(165,42,225,0.08)',   border: 'rgba(165,42,225,0.25)'  },
+const TASK_COLORS: Record<string, {
+  badge:  string
+  icon:   string
+  border: string
+}> = {
+  ingest_robots:             { badge: 'bg-blue-50 border-blue-200 text-blue-600',    icon: 'text-blue-500',   border: 'border-blue-200'   },
+  report_cadence:            { badge: 'bg-purple-50 border-purple-200 text-purple-600', icon: 'text-purple-500', border: 'border-purple-200' },
+  robot_register_validation: { badge: 'bg-green-50 border-green-200 text-green-700',  icon: 'text-green-600',  border: 'border-green-200'  },
+  validate_access_controls:  { badge: 'bg-orange-50 border-orange-200 text-orange-600', icon: 'text-orange-500', border: 'border-orange-200' },
+  orchestrator_training:     { badge: 'bg-violet-50 border-violet-200 text-violet-700', icon: 'text-violet-600', border: 'border-violet-200' },
 }
+
+const DEFAULT_COLORS = TASK_COLORS['ingest_robots']
 
 export default function DeployChecklist({
   configId,
+  templateId,
   initialChecklist,
   onProgressChange,
 }: DeployChecklistProps) {
@@ -39,14 +58,18 @@ export default function DeployChecklist({
   const [saving,    setSaving]    = useState<string | null>(null)
 
   useEffect(() => {
-    getWorkflowDeployTasks()
-      .then(setTasks)
-      .finally(() => setLoading(false))
-  }, [])
+    let cancelled = false
+    setLoading(true)
+    getWorkflowDeployTasks(templateId)
+      .then(data => { if (!cancelled) setTasks(data) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [templateId])
 
   const checkedCount = tasks.filter(t => checklist[t.task_key]).length
   const totalCount   = tasks.length
   const allComplete  = totalCount > 0 && checkedCount === totalCount
+  const progressPct  = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0
 
   useEffect(() => {
     onProgressChange(allComplete, checkedCount, totalCount)
@@ -65,180 +88,123 @@ export default function DeployChecklist({
 
   if (loading) {
     return (
-      <div style={{ padding: '32px 0', textAlign: 'center' }}>
-        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Loading checklist...</p>
+      <div className="py-8 text-center">
+        <p className="text-sm text-gray-500">Loading checklist...</p>
       </div>
     )
   }
 
-  const progressPct = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0
-
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <p style={{ fontSize: '13px', color: 'var(--text-body)', lineHeight: 1.65, marginBottom: '16px' }}>
+      <div className="mb-6">
+        <p className="text-sm text-gray-600 leading-relaxed mb-4">
           All 5 tasks below must be completed by the MBody team before handover to the client.
           These are operational system tasks — not data collection questions.
         </p>
 
         {/* Progress bar */}
-        <div style={{
-          padding: '14px 16px', borderRadius: '10px',
-          background: allComplete
-            ? 'linear-gradient(135deg, rgba(34,197,94,0.06), rgba(57,153,254,0.06))'
-            : 'var(--bg-surface)',
-          border: allComplete
-            ? '1px solid rgba(34,197,94,0.3)'
-            : '1px solid rgba(146,140,227,0.15)',
-          transition: 'all 0.3s',
-        }}>
-          <div style={{
-            display: 'flex', alignItems: 'center',
-            justifyContent: 'space-between', marginBottom: '10px',
-          }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-heading)' }}>
+        <div className={`p-4 rounded-xl border transition-all duration-300 ${
+          allComplete
+            ? 'bg-gradient-to-br from-green-50 to-blue-50 border-green-300'
+            : 'bg-white border-gray-200'
+        }`}>
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-xs font-semibold text-gray-900">
               {allComplete
                 ? 'All tasks complete — ready for handover'
                 : `${checkedCount} of ${totalCount} tasks complete`}
             </span>
-            <span style={{
-              fontSize: '11px', fontWeight: 700,
-              color: allComplete ? '#16A34A' : 'var(--text-muted)',
-            }}>
+            <span className={`text-xs font-bold transition-colors ${
+              allComplete ? 'text-green-600' : 'text-gray-400'
+            }`}>
               {progressPct}%
             </span>
           </div>
-          <div style={{
-            height: '6px', borderRadius: '3px',
-            background: 'rgba(146,140,227,0.15)', overflow: 'hidden',
-          }}>
-            <div style={{
-              height: '100%', borderRadius: '3px',
-              width: `${progressPct}%`,
-              background: allComplete
-                ? 'linear-gradient(90deg, #16A34A, #3999FE)'
-                : 'linear-gradient(90deg, #A52AE1, #3999FE)',
-              transition: 'width 0.4s ease',
-            }} />
+          <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                allComplete
+                  ? 'bg-gradient-to-r from-green-500 to-blue-500'
+                  : 'bg-gradient-to-r from-purple-500 to-blue-500'
+              }`}
+              style={{ width: `${progressPct}%` }}
+            />
           </div>
         </div>
       </div>
 
       {/* Task cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+      <div className="flex flex-col gap-2.5 mb-5">
         {tasks.map((task, idx) => {
-          const done    = !!checklist[task.task_key]
-          const colors  = TASK_COLORS[task.task_key] ?? TASK_COLORS['ingest_robots']
-          const icon    = TASK_ICONS[task.task_key] ?? '◆'
+          const done         = !!checklist[task.task_key]
+          const colors       = TASK_COLORS[task.task_key] ?? DEFAULT_COLORS
+          const Icon         = TASK_ICONS[task.task_key]  ?? Bot
           const isSavingThis = saving === task.task_key
 
           return (
             <div
               key={task.id}
-              style={{
-                borderRadius: '10px', overflow: 'hidden',
-                border: done
-                  ? '1px solid rgba(34,197,94,0.35)'
-                  : 'var(--border-subtle)',
-                transition: 'all 0.2s',
-              }}
+              className={`rounded-xl overflow-hidden border transition-all duration-200 ${
+                done ? 'border-green-300' : 'border-gray-200'
+              }`}
             >
-              {/* Task header */}
+              {/* Task header row */}
               <div
-                style={{
-                  display: 'flex', alignItems: 'flex-start', gap: '14px',
-                  padding: '14px 16px',
-                  background: done ? 'rgba(34,197,94,0.04)' : 'var(--bg-surface)',
-                  cursor: 'pointer',
-                  transition: 'background 0.15s',
-                }}
+                className={`flex items-start gap-3.5 p-4 transition-colors cursor-pointer select-none ${
+                  done ? 'bg-green-50/50' : 'bg-white hover:bg-gray-50'
+                }`}
                 onClick={() => !isSavingThis && toggleTask(task.task_key)}
               >
                 {/* Checkbox */}
-                <div style={{
-                  width: '22px', height: '22px', borderRadius: '6px',
-                  flexShrink: 0, marginTop: '1px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: isSavingThis ? 'wait' : 'pointer',
-                  transition: 'all 0.15s',
-                  background: done ? '#16A34A' : 'var(--bg-elevated)',
-                  border: done ? 'none' : '1.5px solid rgba(146,140,227,0.35)',
-                  boxShadow: done ? '0 2px 8px rgba(22,163,74,0.25)' : 'none',
-                }}>
+                <div className={`w-5 h-5 shrink-0 mt-0.5 rounded-md flex items-center justify-center transition-all duration-150 ${
+                  isSavingThis ? 'cursor-wait' : 'cursor-pointer'
+                } ${
+                  done
+                    ? 'bg-green-600 shadow-sm shadow-green-200'
+                    : 'bg-gray-50 border border-gray-300'
+                }`}>
                   {isSavingThis ? (
-                    <div style={{
-                      width: '10px', height: '10px', borderRadius: '50%',
-                      border: '2px solid rgba(255,255,255,0.4)',
-                      borderTopColor: 'white',
-                      animation: 'spin 0.6s linear infinite',
-                    }} />
+                    <Loader2 className="w-3 h-3 text-white animate-spin" />
                   ) : done ? (
-                    <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-                      <path d="M1 4L4.5 7.5L11 1" stroke="white" strokeWidth="2"
-                        strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <Check className="w-3 h-3 text-white stroke-2" />
                   ) : null}
                 </div>
 
-                {/* Step number + content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                    <span style={{
-                      fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em',
-                      padding: '2px 7px', borderRadius: '10px',
-                      color: colors.dot, background: colors.bg,
-                      border: `1px solid ${colors.border}`,
-                      textTransform: 'uppercase',
-                    }}>
-                      {icon} Task {idx + 1}
+                {/* Label + title + description */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`inline-flex items-center gap-1 text-xs font-bold tracking-wide uppercase px-2 py-0.5 rounded-full border ${colors.badge}`}>
+                      <Icon className={`w-3 h-3 ${colors.icon}`} />
+                      Task {idx + 1}
                     </span>
                     {done && (
-                      <span style={{
-                        fontSize: '10px', fontWeight: 700, letterSpacing: '0.05em',
-                        color: '#16A34A', textTransform: 'uppercase',
-                      }}>
+                      <span className="text-xs font-bold tracking-wide uppercase text-green-600">
                         Complete
                       </span>
                     )}
                   </div>
-                  <div style={{
-                    fontSize: '13px', fontWeight: 700,
-                    color: done ? '#16A34A' : 'var(--text-heading)',
-                    marginBottom: '3px',
-                    textDecoration: done ? 'line-through' : 'none',
-                    transition: 'all 0.2s',
-                  }}>
+                  <div className={`text-sm font-bold mb-0.5 transition-all duration-200 ${
+                    done ? 'text-green-600 line-through decoration-green-400' : 'text-gray-900'
+                  }`}>
                     {task.title}
                   </div>
                   {task.description && (
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    <div className="text-xs text-gray-500 leading-relaxed">
                       {task.description}
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Notes field — always visible for operational notes */}
-              <div style={{
-                padding: '10px 16px 12px',
-                background: 'var(--bg-elevated)',
-                borderTop: 'var(--border-subtle)',
-              }}>
+              {/* Notes field */}
+              <div className="px-4 pt-2.5 pb-3 bg-gray-50 border-t border-gray-100">
                 <textarea
                   rows={1}
                   placeholder="Operational notes (e.g. completed by, timestamp, any issues encountered)..."
                   value={notes[task.task_key] ?? ''}
                   onChange={e => setNotes(prev => ({ ...prev, [task.task_key]: e.target.value }))}
-                  style={{
-                    width: '100%', boxSizing: 'border-box',
-                    background: 'var(--bg-surface)',
-                    border: '1px solid rgba(146,140,227,0.18)',
-                    borderRadius: '6px', padding: '7px 10px',
-                    fontSize: '12px', color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-family)', lineHeight: 1.5,
-                    resize: 'vertical', outline: 'none',
-                  }}
+                  className="w-full bg-white border border-gray-200 rounded-md px-2.5 py-1.5 text-xs text-gray-900 leading-relaxed resize-y outline-none placeholder:text-gray-400 focus:ring-1 focus:ring-purple-300 focus:border-purple-300 transition-all"
                 />
               </div>
             </div>
@@ -248,18 +214,15 @@ export default function DeployChecklist({
 
       {/* Handover notice */}
       {allComplete && (
-        <div style={{
-          padding: '14px 16px', borderRadius: '10px', marginBottom: '8px',
-          background: 'linear-gradient(135deg, rgba(34,197,94,0.07), rgba(57,153,254,0.07))',
-          border: '1px solid rgba(34,197,94,0.3)',
-        }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#16A34A', marginBottom: '4px' }}>
-            ✓ All deploy tasks complete
+        <div className="p-4 rounded-xl bg-gradient-to-br from-green-50 to-blue-50 border border-green-300 mb-2">
+          <div className="flex items-center gap-2 mb-1">
+            <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+            <span className="text-sm font-bold text-green-700">All deploy tasks complete</span>
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          <p className="text-xs text-gray-500 leading-relaxed pl-6">
             Click "Advance to Post-Deployment" below to move this configuration into the
             Post-Deploy phase for +2 week review and tuning.
-          </div>
+          </p>
         </div>
       )}
     </div>

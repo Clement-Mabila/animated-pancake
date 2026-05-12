@@ -13,7 +13,7 @@ export default async function AdminConfigurationEditPage({
   const detail = await fetchConfigurationDetail(id)
   if (!detail) notFound()
 
-  const { configuration, sections } = detail
+  const { configuration, sections, questions } = detail
   const mapped = (sections as ConfigSection[]).reduce(
     (acc, sec) => {
       acc[sec.section_id] = sec
@@ -40,7 +40,7 @@ export default async function AdminConfigurationEditPage({
       <h1 className="text-3xl font-normal" style={{ color: 'var(--text-primary)' }}>
         Edit configuration
       </h1>
-      <AdminConfigEditor initialConfiguration={cfg} initialSections={mapped} />
+      <AdminConfigEditor initialConfiguration={cfg} initialSections={mapped} questions={questions} />
     </div>
   )
 }

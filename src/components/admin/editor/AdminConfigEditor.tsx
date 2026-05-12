@@ -2,19 +2,20 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import SectionCard from '@/components/form/shared/SectionCard'
+import DynamicSection from '@/components/form/DynamicSection'
 import ROISection from '@/components/form/sections/ROISection'
 import KPIsSection from '@/components/form/sections/KPIsSection'
 import FleetSection from '@/components/form/sections/FleetSection'
 import ContactsSection from '@/components/form/sections/ContactsSection'
 import RolesSection from '@/components/form/sections/RolesSection'
-import AlertsSection from '@/components/form/sections/AlertsSection'
 import IntegrationsSection from '@/components/form/sections/IntegrationsSection'
 import FSMSection from '@/components/form/sections/FSMSection'
 import InsightSection from '@/components/form/sections/InsightSection'
 import TimezoneSection from '@/components/form/sections/TimezoneSection'
+import DocumentsSection from '@/components/form/sections/DocumentsSection'
 import { adminSaveSectionAction } from '@/app/admin/actions/configurationAdmin'
 import { useToast } from '@/context/ToastContext'
-import type { ConfigurationWithStaff, ConfigSection, SectionId } from '@/types'
+import type { ConfigurationWithStaff, ConfigSection, SectionId, WorkflowQuestion, ConfigPhase } from '@/types'
 
 const SECTIONS: { id: SectionId; number: number; title: string; subtitle: string; checkpoints: number }[] = [
   { id: 'roi', number: 1, title: 'ROI targets', subtitle: 'Baseline costs & outcome goals', checkpoints: 4 },
@@ -27,17 +28,20 @@ const SECTIONS: { id: SectionId; number: number; title: string; subtitle: string
   { id: 'fsm', number: 8, title: 'Field Service Management & Work Orders', subtitle: 'Service, SLA, approval & warranty setup', checkpoints: 11 },
   { id: 'insight', number: 9, title: 'Location insight reports', subtitle: 'Per-site report configuration', checkpoints: 6 },
   { id: 'timezone', number: 10, title: 'Time zone & reporting schedule', subtitle: 'Delivery cadence & report scheduling', checkpoints: 5 },
+  { id: 'docs', number: 11, title: 'Required documents', subtitle: 'Facility map, org chart & vendor details', checkpoints: 3 },
 ]
 
 export default function AdminConfigEditor({
   initialConfiguration,
   initialSections,
+  questions = [],
 }: {
   initialConfiguration: ConfigurationWithStaff & {
     location?: { industry: string | null } | null
     client_contact?: unknown
   }
   initialSections: Record<string, ConfigSection>
+  questions?: WorkflowQuestion[]
 }) {
   const { showToast } = useToast()
   const [configuration] = useState(initialConfiguration)
@@ -143,16 +147,19 @@ export default function AdminConfigEditor({
                   isComplete={sectionData?.is_complete ?? false}
                   locationId={locationId}
                   industry={industry}
+                  questions={questions.filter(q => q.section_slug === sectionId)}
                 />
               )
             case 'contacts':
               return (
                 <ContactsSection
+                  configurationId={configuration.id}
                   data={sectionData?.data ?? {}}
                   onSave={(d, c) => persist(sectionId, d, c)}
                   onAutoSave={() => {}}
                   isSaving={saving}
                   isComplete={sectionData?.is_complete ?? false}
+                  questions={questions.filter(q => q.section_slug === sectionId)}
                 />
               )
             case 'roles':
@@ -166,17 +173,25 @@ export default function AdminConfigEditor({
                   industry={industry}
                 />
               )
-            case 'alerts':
+            case 'alerts': {
+              const alertQs = questions.filter(q => q.section_slug === 'alerts' && q.field_key !== '__all__')
               return (
-                <AlertsSection
+                <DynamicSection
+                  sectionSlug="alerts"
+                  questions={alertQs}
+                  phase={(configuration.phase as ConfigPhase) ?? 'post'}
+                  description={null}
                   data={sectionData?.data ?? {}}
                   onSave={(d, c) => persist(sectionId, d, c)}
                   onAutoSave={() => {}}
                   isSaving={saving}
                   isComplete={sectionData?.is_complete ?? false}
                   industry={industry}
+                  configurationId={configuration.id}
+                  locationId={locationId}
                 />
               )
+            }
             case 'integrations':
               return (
                 <IntegrationsSection
@@ -186,6 +201,7 @@ export default function AdminConfigEditor({
                   isSaving={saving}
                   isComplete={sectionData?.is_complete ?? false}
                   industry={industry}
+                  questions={questions.filter(q => q.section_slug === sectionId)}
                 />
               )
             case 'fsm':
@@ -221,6 +237,17 @@ export default function AdminConfigEditor({
                   industry={industry}
                 />
               )
+            case 'docs':
+              return (
+                <DocumentsSection
+                  data={sectionData?.data ?? {}}
+                  onSave={(d, c) => persist(sectionId, d, c)}
+                  onAutoSave={() => {}}
+                  isSaving={saving}
+                  isComplete={sectionData?.is_complete ?? false}
+                  questions={questions.filter(q => q.section_slug === sectionId)}
+                />
+              )
           }
         })()
 
@@ -231,7 +258,7 @@ export default function AdminConfigEditor({
             number={idx + 1}
             title={s.title}
             subtitle={s.subtitle}
-            checkpointCount={s.checkpoints}
+            checkpointCount={questions.filter(q => q.section_slug === sectionId && q.field_type === 'checkpoint').length || s.checkpoints}
             isComplete={sectionData?.is_complete ?? false}
             open={openSectionId === sectionId}
             onToggle={() => toggleSection(sectionId)}

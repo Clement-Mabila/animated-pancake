@@ -46,9 +46,9 @@ export const CATEGORY_COLORS: Record<string, { color: string; bg: string; border
 
 // ── Derived helpers ───────────────────────────────────────────
 
-export function getUnassignedRequiredRoles(persons: Person[]): RoleDef[] {
+export function getUnassignedRequiredRoles(persons: Person[], roles: RoleDef[] = ALL_ROLES): RoleDef[] {
   const assigned = new Set(persons.flatMap(p => p.roles))
-  return ALL_ROLES.filter(r => r.required && !assigned.has(r.id))
+  return roles.filter(r => r.required && !assigned.has(r.id))
 }
 
 // ── Data migration ────────────────────────────────────────────

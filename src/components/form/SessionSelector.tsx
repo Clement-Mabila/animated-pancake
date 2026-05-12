@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, X, Building2, MapPin } from 'lucide-react'
+import { Plus, X, Building2, MapPin, Check } from 'lucide-react'
 import {
   getLocations,
   getSubLocations,
@@ -87,7 +87,7 @@ function StepBubble({ n, done }: { n: number; done: boolean }) {
         ? 'bg-gradient-to-br from-bright-violet to-electric-blue text-white border-0'
         : 'bg-elevated text-muted border border-soft-lavender/20'
     }`}>
-      {done ? '✓' : n}
+      {done ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden /> : n}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Check } from 'lucide-react'
 import type { ConfigPhase } from '@/types'
 
 const PHASE_PILL: Record<ConfigPhase, { label: string; bg: string; border: string; color: string }> = {
@@ -126,7 +127,11 @@ export default function SectionCard({
               }
           ),
         }}>
-          {isComplete ? '✓' : number}
+          {isComplete ? (
+            <Check size={15} strokeWidth={2.5} aria-hidden />
+          ) : (
+            number
+          )}
         </div>
 
         {/* Title block */}

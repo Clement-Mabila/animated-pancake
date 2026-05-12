@@ -4,20 +4,25 @@ import { useState } from 'react'
 import FormField from './shared/FormField'
 import CheckpointList from './shared/CheckpointList'
 import SectionDivider from './shared/SectionDivider'
+import OrchestratorUserSelector from './sections/roles/OrchestratorUserSelector'
+import ScheduleAmendSelector from './sections/roles/ScheduleAmendSelector'
+import ConfigPersonPickerField from './shared/ConfigPersonPickerField'
 import type { WorkflowQuestion, WorkflowQuestionOption, ConfigPhase } from '@/types'
 import { Check, Loader2, ArrowRight } from "lucide-react";
 
 interface DynamicSectionProps {
-  sectionSlug:  string
-  questions:    WorkflowQuestion[]
-  phase:        ConfigPhase
-  data:         Record<string, unknown>
-  onSave:       (data: Record<string, unknown>, isComplete: boolean) => void
-  onAutoSave?:  (data: Record<string, unknown>) => void
-  isSaving?:    boolean
-  isComplete?:  boolean
-  industry?:    string | null
-  description?: string | null
+  sectionSlug:      string
+  questions:        WorkflowQuestion[]
+  phase:            ConfigPhase
+  data:             Record<string, unknown>
+  onSave:           (data: Record<string, unknown>, isComplete: boolean) => void
+  onAutoSave?:      (data: Record<string, unknown>) => void
+  isSaving?:        boolean
+  isComplete?:      boolean
+  industry?:        string | null
+  description?:     string | null
+  configurationId?: string
+  locationId?:      string
 }
 
 function MultiSelectField({
@@ -109,6 +114,8 @@ export default function DynamicSection({
   isComplete,
   industry,
   description,
+  configurationId,
+  locationId,
 }: DynamicSectionProps) {
   const { checkpoints: initCheckpoints, ...initFields } = data as {
     checkpoints?: Record<string, boolean>
@@ -203,6 +210,51 @@ export default function DynamicSection({
             options={(q.options as WorkflowQuestionOption[]) ?? []}
             value={(rawVal ?? {}) as Record<string, boolean>}
             hint={hint}
+            onChange={v => handleChange(q.field_key, v)}
+          />
+        )
+
+      case 'orchestrator_user_selector':
+        if (!configurationId || !locationId) return null
+        return (
+          <OrchestratorUserSelector
+            key={q.id}
+            fieldKey={q.field_key}
+            label={q.label}
+            configurationId={configurationId}
+            locationId={locationId}
+            value={(rawVal as string[]) ?? []}
+            onChange={v => handleChange(q.field_key, v)}
+          />
+        )
+
+      case 'schedule_amend_selector':
+        if (!configurationId || !locationId) return null
+        return (
+          <ScheduleAmendSelector
+            key={q.id}
+            fieldKey={q.field_key}
+            label={q.label}
+            configurationId={configurationId}
+            locationId={locationId}
+            value={(rawVal as string[]) ?? []}
+            onChange={v => handleChange(q.field_key, v)}
+          />
+        )
+
+      case 'contact_picker':
+        // Contacts section uses ContactsSection for the role matrix; `contact_picker` elsewhere = one directory person (config_persons id).
+        if (sectionSlug === 'contacts') return null
+        if (!configurationId) return null
+        return (
+          <ConfigPersonPickerField
+            key={q.id}
+            label={q.label}
+            hint={hint ?? null}
+            placeholder={q.placeholder ?? null}
+            configurationId={configurationId}
+            locationId={locationId}
+            value={String(rawVal ?? '')}
             onChange={v => handleChange(q.field_key, v)}
           />
         )

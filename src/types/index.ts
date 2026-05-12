@@ -236,6 +236,23 @@ export interface ClientContact {
   created_at:           string
 }
 
+// ── Config persons (section 4 contacts + section 5 recipients) ──
+
+export type OrchestratorAccessScope = 'fleet_wide' | 'location' | 'sub_location'
+
+export interface ConfigPerson {
+  id:                  string
+  configuration_id:    string
+  full_name:           string
+  email:               string
+  phone:               string | null
+  contact_roles:       string[]               // section-4 role IDs, empty for report-only persons
+  access_scope:        OrchestratorAccessScope | null  // null = section-4 only, not yet a recipient
+  sub_location_ids:    string[]
+  can_amend_schedules: boolean
+  created_at:          string
+}
+
 // ── Suggestions ─────────────────────────────────────────────
 
 export interface ConfigSuggestion {
@@ -329,3 +346,35 @@ export interface ExportVersion {
 }
 
 export type ConfigBucketTab = 'draft' | 'in_progress' | 'complete' | 'all'
+
+// ── Integration block types (used by IntegrationsSection) ────────────────────
+
+export interface IntegrationField {
+  key:      string
+  label:    string
+  type:     'text' | 'textarea' | 'select'
+  options?: string[]
+}
+
+export interface IntegrationCheckpoint {
+  key:   string
+  label: string
+}
+
+export interface IntegrationBlockOptions {
+  description: string
+  color:       string
+  bg:          string
+  border:      string
+  fields:      IntegrationField[]
+  checkpoints: IntegrationCheckpoint[]
+}
+
+// ── Contact picker types (used by ContactsSection) ────────────────────────────
+
+export interface ContactPickerOption {
+  id:       string
+  label:    string
+  category: string
+  required: boolean
+}

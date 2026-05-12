@@ -1363,7 +1363,7 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
                 onClick={handleSaveCustomPreset}
                 disabled={!saveCustomName.trim() || customSaved || savingCustom}
                 className={[
-                  'w-full py-2 rounded-lg border-none text-xs font-semibold transition-colors duration-150',
+                  'w-full py-2 rounded-lg border-none text-xs font-semibold transition-colors duration-150 inline-flex items-center justify-center gap-1.5',
                   customSaved
                     ? 'bg-green-500/10 text-green-500 cursor-default'
                     : !saveCustomName.trim() || savingCustom
@@ -1371,7 +1371,16 @@ export default function AITemplateTab({ onTemplateCreated, onOpenPreview }: Prop
                     : `${c.createBtn} text-white cursor-pointer`,
                 ].join(' ')}
               >
-                {customSaved ? '✓ Preset saved' : savingCustom ? 'Saving…' : 'Save preset'}
+                {customSaved ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
+                    Preset saved
+                  </>
+                ) : savingCustom ? (
+                  'Saving…'
+                ) : (
+                  'Save preset'
+                )}
               </button>
             </div>
           )}

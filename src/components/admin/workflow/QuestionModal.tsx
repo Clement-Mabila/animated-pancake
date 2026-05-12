@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X, Plus, Trash2 } from 'lucide-react'
 import { upsertWorkflowQuestionAction } from '@/app/admin/actions/workflow'
-import type { WorkflowQuestion, WorkflowQuestionOption, ConfigPhase } from '@/types'
+import type { WorkflowQuestion, WorkflowQuestionOption, ConfigPhase, ContactPickerOption } from '@/types'
 
 const PHASES: { value: ConfigPhase; label: string; color: string }[] = [
   { value: 'early',      label: 'Early Onboarding', color: 'text-amber-600  bg-amber-50  border-amber-200'  },
@@ -11,7 +11,7 @@ const PHASES: { value: ConfigPhase; label: string; color: string }[] = [
   { value: 'post',       label: 'Post-Deploy',       color: 'text-violet-600 bg-violet-50 border-violet-200' },
 ]
 
-const FIELD_TYPES = ['text', 'textarea', 'select', 'multiselect', 'boolean', 'number', 'checkpoint'] as const
+const FIELD_TYPES = ['text', 'textarea', 'select', 'multiselect', 'boolean', 'number', 'checkpoint', 'orchestrator_user_selector', 'schedule_amend_selector', 'integration_block', 'contact_picker'] as const
 
 interface Props {
   templateId:  string
@@ -27,7 +27,14 @@ export default function QuestionModal({ templateId, sectionSlug, question, onClo
   const [placeholder,            setPlaceholder]            = useState(question?.placeholder             ?? '')
   const [fieldType,              setFieldType]              = useState(question?.field_type              ?? 'text')
   const [visibleInPhases,        setVisibleInPhases]        = useState<ConfigPhase[]>(question?.visible_in_phases ?? ['pre_deploy'])
-  const [options,                setOptions]                = useState<WorkflowQuestionOption[]>(question?.options ?? [])
+  const [options,                setOptions]                = useState<WorkflowQuestionOption[]>(
+    (fieldType !== 'contact_picker' ? question?.options : null) ?? []
+  )
+  const [roleOptions,            setRoleOptions]            = useState<ContactPickerOption[]>(
+    fieldType === 'contact_picker' && sectionSlug === 'contacts' && question?.options
+      ? (question.options as unknown as ContactPickerOption[])
+      : []
+  )
   const [isPartial,              setIsPartial]              = useState(question?.is_partial              ?? false)
   const [instructionPreDeploy,   setInstructionPreDeploy]   = useState(question?.instruction_pre_deploy  ?? '')
   const [instructionPostDeploy,  setInstructionPostDeploy]  = useState(question?.instruction_post_deploy ?? '')
@@ -52,6 +59,11 @@ export default function QuestionModal({ templateId, sectionSlug, question, onClo
     if (visibleInPhases.length === 0) { setError('Select at least one phase'); return }
     setSaving(true)
     setError(null)
+    const resolvedOptions =
+      fieldType === 'contact_picker'
+        ? (sectionSlug === 'contacts' && roleOptions.length > 0 ? roleOptions : null)
+        : (needsOptions && options.length > 0 ? options : null)
+
     const result = await upsertWorkflowQuestionAction({
       id:                    question?.id,
       templateId,
@@ -61,7 +73,7 @@ export default function QuestionModal({ templateId, sectionSlug, question, onClo
       placeholder:           placeholder || null,
       fieldType,
       visibleInPhases,
-      options:               needsOptions && options.length > 0 ? options : null,
+      options:               resolvedOptions as WorkflowQuestionOption[] | null,
       isPartial,
       instructionPreDeploy:  instructionPreDeploy  || null,
       instructionPostDeploy: instructionPostDeploy || null,
@@ -143,10 +155,25 @@ export default function QuestionModal({ templateId, sectionSlug, question, onClo
                   Checkpoint questions appear in the completion checklist at the bottom of the section.
                 </p>
               )}
+              {fieldType === 'integration_block' && (
+                <p className="text-xs text-blue-600 mt-1.5 bg-blue-50 rounded px-2 py-1">
+                  Integration block options (description, color, fields, checkpoints) must be configured via Supabase SQL. Create the question here first, then seed the options JSON directly.
+                </p>
+              )}
+              {fieldType === 'contact_picker' && sectionSlug === 'contacts' && (
+                <p className="text-xs text-violet-600 mt-1.5 bg-violet-50 rounded px-2 py-1">
+                  On the Contacts section, this type defines the role columns for the directory. Add each role below — they replace the default hardcoded role list.
+                </p>
+              )}
+              {fieldType === 'contact_picker' && sectionSlug !== 'contacts' && (
+                <p className="text-xs text-violet-600 mt-1.5 bg-violet-50 rounded px-2 py-1">
+                  Outside Contacts, <span className="font-medium">contact picker</span> means a single person from the configuration directory (<code className="text-[11px]">config_persons</code>). Users can pick someone already added in Contacts or add a new person inline (no Orchestrator access change).
+                </p>
+              )}
             </div>
           )}
 
-          {!isAll && (fieldType === 'text' || fieldType === 'textarea' || fieldType === 'number') && (
+          {!isAll && (fieldType === 'text' || fieldType === 'textarea' || fieldType === 'number' || (fieldType === 'contact_picker' && sectionSlug !== 'contacts')) && (
             <div>
               <label className="block text-xs font-medium text-muted mb-1">
                 Placeholder text
@@ -202,6 +229,69 @@ export default function QuestionModal({ templateId, sectionSlug, question, onClo
                   <button
                     type="button"
                     onClick={() => setOptions(prev => prev.filter((_, j) => j !== i))}
+                    className="mt-1 text-red-400 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Role editor — contact_picker on Contacts section only (defines role columns) */}
+          {!isAll && fieldType === 'contact_picker' && sectionSlug === 'contacts' && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-medium text-muted">Roles</label>
+                <button
+                  type="button"
+                  onClick={() => setRoleOptions(prev => [...prev, { id: '', label: '', category: 'Fleet-wide', required: false }])}
+                  className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700"
+                >
+                  <Plus size={12} /> Add role
+                </button>
+              </div>
+              {roleOptions.length === 0 && (
+                <p className="text-xs text-muted">No roles defined — will fall back to the default hardcoded role list.</p>
+              )}
+              {roleOptions.map((role, i) => (
+                <div key={i} className="flex gap-2 items-start">
+                  <div className="flex-1 space-y-1">
+                    <div className="grid grid-cols-2 gap-1">
+                      <input
+                        value={role.id}
+                        onChange={e => setRoleOptions(prev => prev.map((r, j) => j === i ? { ...r, id: e.target.value.toLowerCase().replace(/[\s-]+/g, '_').replace(/[^a-z0-9_]/g, '') } : r))}
+                        placeholder="id (snake_case)"
+                        className="rounded-md border border-border bg-elevated px-2.5 py-1.5 text-xs font-mono text-heading placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+                      />
+                      <input
+                        value={role.label}
+                        onChange={e => setRoleOptions(prev => prev.map((r, j) => j === i ? { ...r, label: e.target.value } : r))}
+                        placeholder="Label (e.g. Site Manager)"
+                        className="rounded-md border border-border bg-elevated px-2.5 py-1.5 text-xs text-heading placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 items-center">
+                      <input
+                        value={role.category}
+                        onChange={e => setRoleOptions(prev => prev.map((r, j) => j === i ? { ...r, category: e.target.value } : r))}
+                        placeholder="Category (e.g. Fleet-wide)"
+                        className="rounded-md border border-border bg-elevated px-2.5 py-1.5 text-xs text-heading placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+                      />
+                      <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={role.required}
+                          onChange={e => setRoleOptions(prev => prev.map((r, j) => j === i ? { ...r, required: e.target.checked } : r))}
+                          className="rounded border-border"
+                        />
+                        Required
+                      </label>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRoleOptions(prev => prev.filter((_, j) => j !== i))}
                     className="mt-1 text-red-400 hover:text-red-600 transition-colors"
                   >
                     <Trash2 size={13} />

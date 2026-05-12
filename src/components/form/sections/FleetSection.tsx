@@ -30,6 +30,8 @@ interface Robot {
 
 interface SubLocation { id: string; name: string }
 
+import type { WorkflowQuestion } from '@/types'
+
 interface FleetSectionProps {
   data?: Record<string, unknown>
   onSave: (data: Record<string, unknown>, isComplete: boolean) => void
@@ -38,6 +40,7 @@ interface FleetSectionProps {
   isComplete?: boolean
   locationId?: string
   industry?: string | null
+  questions?: WorkflowQuestion[]
 }
 
 interface ParsedRobotRow {
@@ -364,7 +367,12 @@ export default function FleetSection({
   isComplete,
   locationId,
   industry,
+  questions,
 }: FleetSectionProps) {
+  const resolvedCheckpoints = questions && questions.some(q => q.field_type === 'checkpoint')
+    ? questions.filter(q => q.field_type === 'checkpoint' && q.active).sort((a, b) => a.sort_order - b.sort_order).map(q => ({ id: q.field_key, label: q.label ?? q.field_key }))
+    : CHECKPOINTS
+
   // ── Section-level form state ──────────────────────────────
   const [robots,       setRobots]       = useState<Robot[]>([])
   const [subLocations, setSubLocations] = useState<SubLocation[]>([])
@@ -914,7 +922,7 @@ export default function FleetSection({
 
       <FormField label="Amendments or corrections required" type="textarea" rows={3} placeholder="List any records that need updating before go-live" value={fields.amendments_required} onChange={v => setField('amendments_required', v)} sectionId="fleet" fieldKey="amendments_required" industry={industry} />
 
-      <CheckpointList checkpoints={CHECKPOINTS} checked={checked} onChange={(id, value) => { const u = { ...checked, [id]: value }; setChecked(u); onAutoSave?.({ ...getCurrentData(), checkpoints: u }) }} />
+      <CheckpointList checkpoints={resolvedCheckpoints} checked={checked} onChange={(id, value) => { const u = { ...checked, [id]: value }; setChecked(u); onAutoSave?.({ ...getCurrentData(), checkpoints: u }) }} />
 
       <SaveButtons onSaveDraft={() => onSave(getCurrentData(), false)} onComplete={() => onSave(getCurrentData(), true)} isSaving={isSaving ?? false} isComplete={isComplete ?? false} />
     </div>

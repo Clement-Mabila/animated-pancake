@@ -25,7 +25,7 @@ export default function SaveButtons({
 
   function handleComplete() {
     onComplete()
-    showToast('complete', 'Section complete ✓')
+    showToast('complete', 'Section complete')
   }
 
   return (

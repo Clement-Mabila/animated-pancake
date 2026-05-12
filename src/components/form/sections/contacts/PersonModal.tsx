@@ -2,17 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { X } from 'lucide-react'
-import { ALL_ROLES, CATEGORIES, CATEGORY_COLORS } from './data'
-import type { Person } from './data'
+import { ALL_ROLES, CATEGORY_COLORS } from './data'
+import type { Person, RoleDef } from './data'
 
 interface PersonModalProps {
   person?:    Person | null
   allPersons: Person[]
+  roles?:     RoleDef[]
   onSave:     (person: Person) => void
   onClose:    () => void
 }
 
-export default function PersonModal({ person, allPersons, onSave, onClose }: PersonModalProps) {
+export default function PersonModal({ person, allPersons, roles, onSave, onClose }: PersonModalProps) {
+  const effectiveRoles = roles ?? ALL_ROLES
+  const categories = [...new Set(effectiveRoles.map(r => r.category))]
   const [name,          setName]          = useState(person?.name  ?? '')
   const [email,         setEmail]         = useState(person?.email ?? '')
   const [phone,         setPhone]         = useState(person?.phone ?? '')
@@ -190,9 +193,9 @@ export default function PersonModal({ person, allPersons, onSave, onClose }: Per
           </div>
 
           {/* Roles by category */}
-          {CATEGORIES.map(cat => {
-            const roles = ALL_ROLES.filter(r => r.category === cat)
-            const c     = CATEGORY_COLORS[cat]
+          {categories.map(cat => {
+            const catRoles = effectiveRoles.filter(r => r.category === cat)
+            const c        = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS['Fleet-wide']
             return (
               <div key={cat} style={{ marginBottom: '18px' }}>
                 <div style={{
@@ -203,7 +206,7 @@ export default function PersonModal({ person, allPersons, onSave, onClose }: Per
                   {cat}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {roles.map(role => {
+                  {catRoles.map(role => {
                     const isSelected = selectedRoles.includes(role.id)
                     const assignedTo = roleAssignments[role.id]
                     const isDisabled = !!assignedTo

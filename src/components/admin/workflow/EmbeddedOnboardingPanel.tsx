@@ -1,12 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { CheckCircle2, Circle, Clock, Lock, CirclePlus, ArrowRight, Info } from 'lucide-react'
+import { CheckCircle2, Circle, Clock, Lock, CirclePlus, ArrowRight, Info, Check, ChevronUp, ChevronDown } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
 import DynamicSection from '@/components/form/DynamicSection'
 import FleetSection from '@/components/form/sections/FleetSection'
 import ContactsSection from '@/components/form/sections/ContactsSection'
-import AlertsSection from '@/components/form/sections/AlertsSection'
 import IntegrationsSection from '@/components/form/sections/IntegrationsSection'
 import DocumentsSection from '@/components/form/sections/DocumentsSection'
 import LocationPicker from './LocationPicker'
@@ -769,7 +768,11 @@ export default function EmbeddedOnboardingPanel({
                           background: done ? '#928CE3' : 'rgba(146,140,227,0.15)',
                           color: done ? 'white' : 'var(--text-muted)',
                         }}>
-                          {done ? '✓' : i + 1}
+                          {done ? (
+                            <Check size={10} strokeWidth={2.5} aria-hidden />
+                          ) : (
+                            i + 1
+                          )}
                         </div>
                         <span style={{ fontSize: '9px', fontWeight: 600, color: done ? '#928CE3' : 'var(--text-muted)', maxWidth: '52px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {s.title.split(' ')[0]}
@@ -796,15 +799,17 @@ export default function EmbeddedOnboardingPanel({
                     onAutoSave: (d: Record<string, unknown>) => handleAutoSaveSection(sectionId, d),
                     isSaving:   saving,
                     isComplete: sectionData?.is_complete ?? false,
+                    industry:   (configuration as { location?: { industry?: string | null } | null }).location?.industry ?? null,
+                    configurationId: configuration.id,
+                    locationId: configuration.location_id ?? undefined,
                   }
 
                   const child = (() => {
                     switch (sectionId) {
-                      case 'fleet':        return <FleetSection        {...dynProps} locationId={configuration.location_id ?? undefined} />
-                      case 'contacts':     return <ContactsSection     {...dynProps} />
-                      case 'alerts':       return <AlertsSection       {...dynProps} phase={phase} />
-                      case 'integrations': return <IntegrationsSection {...dynProps} phase={phase} />
-                      case 'docs':         return <DocumentsSection    {...dynProps} />
+                      case 'fleet':        return <FleetSection        {...dynProps} questions={sectionQs} locationId={configuration.location_id ?? undefined} />
+                      case 'contacts':     return <ContactsSection     {...dynProps} questions={sectionQs} configurationId={configuration.id} />
+                      case 'integrations': return <IntegrationsSection {...dynProps} questions={sectionQs} phase={phase} />
+                      case 'docs':         return <DocumentsSection    {...dynProps} questions={sectionQs} />
                       default:             return (
                         <DynamicSection
                           sectionSlug={sectionId}
@@ -839,7 +844,9 @@ export default function EmbeddedOnboardingPanel({
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-muted">{isOpen ? '▲' : '▼'}</span>
+                        <span className="text-[10px] text-muted flex items-center">
+                          {isOpen ? <ChevronUp size={12} strokeWidth={2} aria-hidden /> : <ChevronDown size={12} strokeWidth={2} aria-hidden />}
+                        </span>
                       </button>
 
                       {isOpen && (
@@ -868,11 +875,14 @@ export default function EmbeddedOnboardingPanel({
                 {/* Progress + advance row */}
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div>
-                    <p className="text-[11px] font-semibold text-heading">
+                    <p className="text-[11px] font-semibold text-heading inline-flex items-center gap-1">
+                      {allDone && (
+                        <Check size={12} strokeWidth={2.5} className="shrink-0 text-success" aria-hidden />
+                      )}
                       {allDone && isLastPhase
-                        ? 'Configuration complete ✓'
+                        ? 'Configuration complete'
                         : allDone
-                          ? `All ${activeSections.length} sections done ✓`
+                          ? `All ${activeSections.length} sections done`
                           : `${completedSections} / ${activeSections.length} sections`}
                     </p>
                     {!isLastPhase && nextPhase && (

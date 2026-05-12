@@ -2,14 +2,15 @@
 
 import { AlertTriangle } from 'lucide-react'
 import { getUnassignedRequiredRoles } from './data'
-import type { Person } from './data'
+import type { Person, RoleDef } from './data'
 
 interface UnassignedRolesWarningProps {
   persons: Person[]
+  roles?:  RoleDef[]
 }
 
-export default function UnassignedRolesWarning({ persons }: UnassignedRolesWarningProps) {
-  const unassigned = getUnassignedRequiredRoles(persons)
+export default function UnassignedRolesWarning({ persons, roles }: UnassignedRolesWarningProps) {
+  const unassigned = getUnassignedRequiredRoles(persons, roles)
   if (unassigned.length === 0) return null
 
   return (
