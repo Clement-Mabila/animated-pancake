@@ -7,6 +7,8 @@ const LABELS: Record<string, string> = {
   admin: 'Admin',
   configurations: 'Configurations',
   contacts: 'Contacts',
+  locations: 'Locations',
+  workflow: 'Workflow',
   audit: 'Audit log',
   exports: 'Exports',
   settings: 'Settings',

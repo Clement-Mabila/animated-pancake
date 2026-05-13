@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import SuggestionDropdown from '@/components/form/shared/SuggestionDropdown'
 import { useSuggestions } from '@/hooks/useSuggestions'
 import { saveSuggestionAction } from '@/app/actions/session'
+import { getFixedSuggestionDropdownStyle } from '@/components/form/shared/suggestionPortalLayout'
 import { addRobotAction, updateRobotAction, deleteRobotAction, importRobotsAction } from '@/app/actions/robots'
 
 interface Robot {
@@ -144,7 +145,7 @@ function RobotSuggestionInput({
     function updatePos() {
       const rect = containerRef.current?.getBoundingClientRect()
       if (!rect) return
-      setDropdownPos({ position: 'fixed', top: rect.bottom + 4, left: rect.left, width: rect.width, zIndex: 9999 })
+      setDropdownPos(getFixedSuggestionDropdownStyle(rect))
     }
     updatePos()
     window.addEventListener('resize', updatePos)

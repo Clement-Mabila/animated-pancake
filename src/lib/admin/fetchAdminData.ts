@@ -5,7 +5,14 @@ import {
   matchesBucket,
   phaseSectionCount,
 } from '@/lib/admin/configBuckets'
-import type { ConfigBucketTab, Configuration, ConfigSection, ConfigPhase } from '@/types'
+import type {
+  ConfigBucketTab,
+  Configuration,
+  ConfigSection,
+  ConfigPhase,
+  Location,
+  SubLocation,
+} from '@/types'
 
 export interface AdminConfigListRow {
   id: string
@@ -324,4 +331,24 @@ export async function fetchExportVersions() {
     .limit(100)
   if (error) throw error
   return data ?? []
+}
+
+/** Locations with nested sub_locations (ordered by name). */
+export type LocationWithSubLocations = Location & { sub_locations: SubLocation[] }
+
+export async function fetchLocationsWithSubLocations(): Promise<LocationWithSubLocations[]> {
+  const admin = createAdminClient()
+  const { data, error } = await admin
+    .from('locations')
+    .select(`
+      *,
+      sub_locations (*)
+    `)
+    .order('name')
+  if (error) throw error
+  const rows = (data ?? []) as (Location & { sub_locations?: SubLocation[] | null })[]
+  return rows.map(row => ({
+    ...row,
+    sub_locations: [...(row.sub_locations ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
+  }))
 }

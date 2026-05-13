@@ -6,6 +6,7 @@ import {
   Pentagon,
   Bolt,
   Users,
+  MapPin,
   AlignHorizontalJustifyCenter,
   CodeXml,
   BrainCog,
@@ -27,6 +28,7 @@ const NAV_SECTIONS: NavItemType[][] = [
   [
     { icon: Pentagon,                       label: 'Overview',        href: '/admin' },
     { icon: Bolt,                           label: 'Configurations',  href: '/admin/configurations' },
+    { icon: MapPin,                         label: 'Locations',       href: '/admin/locations' },
     { icon: Users,                          label: 'Contacts',        href: '/admin/contacts' },
     { icon: Workflow,                       label: 'Workflow',        href: '/admin/workflow' },
     { icon: AlignHorizontalJustifyCenter,   label: 'Audit log',       href: '/admin/audit' },

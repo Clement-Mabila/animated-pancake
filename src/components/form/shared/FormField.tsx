@@ -6,6 +6,7 @@ import { useSuggestions } from '@/hooks/useSuggestions'
 import SuggestionDropdown from './SuggestionDropdown'
 import FieldDefaultBadge from './FieldDefaultBadge'
 import { saveSuggestionAction } from '@/app/actions/session'
+import { getFixedSuggestionDropdownStyle } from '@/components/form/shared/suggestionPortalLayout'
 
 interface FormFieldProps {
   label:         string
@@ -56,13 +57,7 @@ export default function FormField({
     function updatePos() {
       const rect = containerRef.current?.getBoundingClientRect()
       if (!rect) return
-      setDropdownPos({
-        position: 'fixed',
-        top:      rect.bottom + 4,
-        left:     rect.left,
-        width:    rect.width,
-        zIndex:   9999,
-      })
+      setDropdownPos(getFixedSuggestionDropdownStyle(rect))
     }
 
     updatePos()

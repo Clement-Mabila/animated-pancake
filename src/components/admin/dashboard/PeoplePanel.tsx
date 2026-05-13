@@ -45,7 +45,7 @@ const ROLE_LABEL_MAP: Record<ContactRoleLabel, string> = {
 const STAFF_ROLE_MAP: Record<MBodyRole, string> = {
   sales:            'Sales',
   account_manager:  'Account Manager',
-  operations:       'Operations', 
+  operations:       'Operations',
   engineering:      'Engineering',
   finance:          'Finance',
   customer_success: 'Customer Success',
