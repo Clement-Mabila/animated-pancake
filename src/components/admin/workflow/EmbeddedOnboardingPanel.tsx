@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { CheckCircle2, Circle, Clock, Lock, CirclePlus, ArrowRight, Info, Check, ChevronUp, ChevronDown } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
 import DynamicSection from '@/components/form/DynamicSection'
+import DeployChecklist from '@/components/form/DeployChecklist'
 import FleetSection from '@/components/form/sections/FleetSection'
 import ContactsSection from '@/components/form/sections/ContactsSection'
 import IntegrationsSection from '@/components/form/sections/IntegrationsSection'
@@ -582,6 +583,7 @@ export default function EmbeddedOnboardingPanel({
   const [autoSaveIndicator,   setAutoSaveIndicator]   = useState(false)
   const [showAll,             setShowAll]             = useState(false)
   const [showRollbackConfirm, setShowRollbackConfirm] = useState(false)
+  const [deployAllComplete,   setDeployAllComplete]   = useState(false)
 
   // Build phaseSections from questions
   const phaseSections: Record<ConfigPhase, SectionId[]> = { early: [], pre_deploy: [], deploy: [], post: [] }
@@ -725,16 +727,19 @@ export default function EmbeddedOnboardingPanel({
             />
           )
         ) : (() => {
-          const nextPhase  = getNextPhase(configuration.phase)
-          const prevPhase  = getPreviousPhase(configuration.phase)
-          const allDone    = completedSections === activeSections.length && activeSections.length > 0
+          const nextPhase     = getNextPhase(configuration.phase)
+          const prevPhase     = getPreviousPhase(configuration.phase)
+          const isDeployPhase = configuration.phase === 'deploy'
+          const allDone       = isDeployPhase
+            ? deployAllComplete
+            : completedSections === activeSections.length && activeSections.length > 0
           const isLastPhase = nextPhase === null
 
           return (
             <div className="flex flex-col">
 
               {/* ── Progress dots ── */}
-              {activeSections.length > 0 && (
+              {configuration.phase !== 'deploy' && activeSections.length > 0 && (
                 <div className="px-3 pt-3 pb-2 flex gap-1.5 flex-wrap border-b border-border shrink-0">
                   {activeSections.map((s, i) => {
                     const done = configSections[s.slug]?.is_complete ?? false
@@ -784,7 +789,20 @@ export default function EmbeddedOnboardingPanel({
 
               {/* ── Sections list ── */}
               <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                {displaySections.map(section => {
+                {configuration.phase === 'deploy' && (
+                  <DeployChecklist
+                    configId={configuration.id}
+                    templateId={
+                      configuration.workflow_template_id ??
+                      templateId ??
+                      '11111111-1111-1111-1111-111111111111'
+                    }
+                    initialChecklist={(configuration.deploy_checklist as Record<string, boolean>) ?? {}}
+                    onProgressChange={(allComplete) => setDeployAllComplete(allComplete)}
+                  />
+                )}
+
+                {(configuration.phase !== 'deploy' || showAll) && displaySections.map(section => {
                   const sectionId   = section.slug as SectionId
                   const sectionData = configSections[sectionId]
                   const phase       = configuration.phase
@@ -857,7 +875,7 @@ export default function EmbeddedOnboardingPanel({
                   )
                 })}
 
-                {activeSections.length === 0 && (
+                {configuration.phase !== 'deploy' && activeSections.length === 0 && (
                   <p className="text-xs text-muted text-center py-6">
                     No sections configured for the current phase.
                   </p>
@@ -878,11 +896,15 @@ export default function EmbeddedOnboardingPanel({
                       {allDone && (
                         <Check size={12} strokeWidth={2.5} className="shrink-0 text-success" aria-hidden />
                       )}
-                      {allDone && isLastPhase
-                        ? 'Configuration complete'
-                        : allDone
-                          ? `All ${activeSections.length} sections done`
-                          : `${completedSections} / ${activeSections.length} sections`}
+                      {isDeployPhase
+                        ? allDone
+                          ? 'All 5 deploy tasks complete'
+                          : '5 checklist tasks must be completed before handover'
+                        : allDone && isLastPhase
+                          ? 'Configuration complete'
+                          : allDone
+                            ? `All ${activeSections.length} sections done`
+                            : `${completedSections} / ${activeSections.length} sections`}
                     </p>
                     {!isLastPhase && nextPhase && (
                       <p className="text-[10px] text-muted">
@@ -912,7 +934,9 @@ export default function EmbeddedOnboardingPanel({
                         type="button"
                         onClick={() => advancePhase(nextPhase)}
                         disabled={!allDone || loading}
-                        title={!allDone ? 'Complete all sections to advance' : undefined}
+                        title={!allDone
+                          ? isDeployPhase ? 'Complete all 5 deploy tasks to advance' : 'Complete all sections to advance'
+                          : undefined}
                         style={{
                           padding: '5px 10px', borderRadius: '7px', border: 'none',
                           background: allDone ? '#928CE3' : 'rgba(146,140,227,0.15)',
@@ -922,7 +946,8 @@ export default function EmbeddedOnboardingPanel({
                           transition: 'all 0.15s',
                         }}
                       >
-                        {PHASE_LABELS[nextPhase]} →
+                        {isDeployPhase ? 'Advance to Post-Deployment' : PHASE_LABELS[nextPhase]}
+                        {' →'}
                       </button>
                     )}
                   </div>
