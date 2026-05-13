@@ -8,7 +8,6 @@ import DynamicSection from '@/components/form/DynamicSection'
 import FleetSection from '@/components/form/sections/FleetSection'
 import ContactsSection from '@/components/form/sections/ContactsSection'
 import IntegrationsSection from '@/components/form/sections/IntegrationsSection'
-import DocumentsSection from '@/components/form/sections/DocumentsSection'
 import DeployChecklist from '@/components/form/DeployChecklist'
 import { useState, useEffect, useRef } from 'react'
 import { Check } from 'lucide-react'
@@ -330,13 +329,13 @@ export default function OnboardingClient({ dbSections, phaseSections, questions,
                     case 'insight':
                     case 'timezone':
                     case 'alerts':
-                      return <DynamicSection sectionSlug={sectionId} questions={sectionQs} phase={phase} description={s.description} {...dynProps} />
+                    case 'docs':
+                      return <DynamicSection key={sectionId} sectionSlug={sectionId} questions={sectionQs} phase={phase} description={s.description} {...dynProps} />
 
                     // ── Custom sections (complex UI, checkpoints from DB) ──
-                    case 'fleet':        return <FleetSection        {...dynProps} questions={sectionQs} locationId={configuration.location_id ?? undefined} />
-                    case 'contacts':     return <ContactsSection     {...dynProps} questions={sectionQs} configurationId={configuration.id} />
-                    case 'integrations': return <IntegrationsSection {...dynProps} questions={sectionQs} phase={phase} />
-                    case 'docs':         return <DocumentsSection    {...dynProps} questions={sectionQs} />
+                    case 'fleet':        return <FleetSection        key={sectionId} {...dynProps} questions={sectionQs} phase={phase} description={s.description ?? null} locationId={configuration.location_id ?? undefined} configurationId={configuration.id} />
+                    case 'contacts':     return <ContactsSection     key={sectionId} {...dynProps} questions={sectionQs} configurationId={configuration.id} />
+                    case 'integrations': return <IntegrationsSection key={sectionId} {...dynProps} questions={sectionQs} phase={phase} />
                   }
                 })()
 

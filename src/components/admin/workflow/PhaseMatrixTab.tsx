@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Info } from 'lucide-react'
 import { upsertWorkflowQuestionAction } from '@/app/admin/actions/workflow'
@@ -45,6 +45,15 @@ export default function PhaseMatrixTab({ templateId, sections, questions, readOn
     })
     return init
   })
+
+  useEffect(() => {
+    const next: Record<string, Set<ConfigPhase>> = {}
+    sections.forEach(s => {
+      const gate = questions.find(q => q.section_slug === s.slug && q.field_key === '__all__')
+      next[s.slug] = new Set((gate?.visible_in_phases ?? []) as ConfigPhase[])
+    })
+    setPhaseMap(next)
+  }, [sections, questions])
 
   const [saving, setSaving] = useState<string | null>(null)
 

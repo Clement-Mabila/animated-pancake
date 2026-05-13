@@ -11,7 +11,7 @@ const PHASES: { value: ConfigPhase; label: string; color: string }[] = [
   { value: 'post',       label: 'Post-Deploy',       color: 'text-violet-600 bg-violet-50 border-violet-200' },
 ]
 
-const FIELD_TYPES = ['text', 'textarea', 'select', 'multiselect', 'boolean', 'number', 'checkpoint', 'orchestrator_user_selector', 'schedule_amend_selector', 'integration_block', 'contact_picker'] as const
+const FIELD_TYPES = ['text', 'textarea', 'select', 'multiselect', 'boolean', 'number', 'multi_entry', 'onboarding_document', 'checkpoint', 'orchestrator_user_selector', 'schedule_amend_selector', 'integration_block', 'contact_picker', 'fleet_robot_register'] as const
 
 interface Props {
   templateId:  string

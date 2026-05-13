@@ -52,6 +52,7 @@ async function OnboardingPageContent({
       .from('workflow_sections')
       .select('slug, title, subtitle, description, sort_order, checkpoint_count')
       .eq('template_id', templateId)
+      .eq('is_deleted', false)
       .eq('active', true)
       .order('sort_order'),
     db
@@ -59,11 +60,13 @@ async function OnboardingPageContent({
       .select('section_slug, visible_in_phases')
       .eq('template_id', templateId)
       .eq('field_key', '__all__')
+      .eq('is_deleted', false)
       .eq('active', true),
     db
       .from('workflow_questions')
       .select('*')
       .eq('template_id', templateId)
+      .eq('is_deleted', false)
       .neq('field_key', '__all__')
       .eq('active', true)
       .order('sort_order'),

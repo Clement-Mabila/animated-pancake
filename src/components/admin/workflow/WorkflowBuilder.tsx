@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useLayoutEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   CheckCircle, Lock,
@@ -13,6 +13,24 @@ import DeployTasksTab from './DeployTasksTab'
 import AITemplateTab  from './AITemplateTab'
 import EmbeddedOnboardingPanel from './EmbeddedOnboardingPanel'
 import type { WorkflowTemplate, WorkflowSection, WorkflowQuestion, WorkflowDeployTask } from '@/types'
+
+/** Fingerprint server workflow rows so draft state resets when RSC props change after refresh. */
+function stableWorkflowPayloadSig(sections: WorkflowSection[], questions: WorkflowQuestion[]): string {
+  const sec = [...sections].sort((a, b) => a.id.localeCompare(b.id))
+  const qs  = [...questions].sort((a, b) => a.id.localeCompare(b.id))
+  return JSON.stringify({
+    sec: sec.map(s => ({
+      id: s.id, slug: s.slug, so: s.sort_order, t: s.title, st: s.subtitle, d: s.description,
+      cc: s.checkpoint_count, a: s.active,
+    })),
+    qs: qs.map(q => ({
+      id: q.id, ss: q.section_slug, fk: q.field_key, so: q.sort_order, lbl: q.label,
+      ph: q.placeholder, ft: q.field_type, vip: q.visible_in_phases, opt: q.options,
+      ip: q.is_partial, pre: q.instruction_pre_deploy, post: q.instruction_post_deploy,
+      dv: q.dummy_value, dt: q.dummy_tooltip, a: q.active, dg: q.display_group, div: q.divider_before,
+    })),
+  })
+}
 
 type Tab = 'sections' | 'matrix' | 'deploy' | 'ai'
 
@@ -69,8 +87,19 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
     ?? templates[0]
     ?? null
 
-  const sections        = allSections.filter(s => s.template_id === selected?.id)
-  const questions       = allQuestions.filter(q => q.template_id === selected?.id)
+  const serverSections  = selected ? allSections.filter(s => s.template_id === selected.id) : []
+  const serverQuestions = selected ? allQuestions.filter(q => q.template_id === selected.id) : []
+  const serverSig       = stableWorkflowPayloadSig(serverSections, serverQuestions)
+
+  const [draftSections, setDraftSections]   = useState<WorkflowSection[]>(serverSections)
+  const [draftQuestions, setDraftQuestions] = useState<WorkflowQuestion[]>(serverQuestions)
+
+  useLayoutEffect(() => {
+    setDraftSections(serverSections)
+    setDraftQuestions(serverQuestions)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- sync draft only when server payload fingerprint changes
+  }, [serverSig])
+
   const deployTasks     = allDeployTasks.filter(d => d.template_id === selected?.id)
   const deletedSections = allDeletedSections.filter(s => s.template_id === selected?.id)
   const deletedQuestions = allDeletedQuestions.filter(q => q.template_id === selected?.id)
@@ -113,7 +142,7 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
                 <div className="flex flex-col gap-1.5 bg-elevated rounded-3xl px-5 py-4 min-w-[120px]">
                   <span className="text-xs text-muted">Sections</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-heading">{sections.length}</span>
+                    <span className="text-2xl font-bold text-heading">{draftSections.length}</span>
                     <span className="text-xs font-normal px-2 py-1.5 rounded-2xl whitespace-nowrap bg-electric-blue/15 text-electric-blue">
                       configured
                     </span>
@@ -122,7 +151,7 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
                 <div className="flex flex-col gap-1.5 bg-elevated rounded-3xl px-5 py-4 min-w-[120px]">
                   <span className="text-xs text-muted">Questions</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-heading">{questions.length}</span>
+                    <span className="text-2xl font-bold text-heading">{draftQuestions.length}</span>
                     <span className="text-xs font-normal px-2 py-1.5 rounded-2xl whitespace-nowrap bg-bright-violet/15 text-bright-violet">
                       total fields
                     </span>
@@ -168,7 +197,7 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
           <div className="flex items-center gap-2 flex-wrap">
             {NAV_CARDS.map(({ id, label, icon: Icon, getCount, iconColor, iconBg }) => {
               const isActive = tab === id
-              const count    = getCount(sections, questions, deployTasks)
+              const count    = getCount(draftSections, draftQuestions, deployTasks)
               return (
                 <button
                   key={id}
@@ -232,8 +261,10 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
                   <SectionsTab
                     key={`${selected.id}-${sectionsVersion}`}
                     templateId={selected.id}
-                    sections={sections}
-                    questions={questions}
+                    sections={draftSections}
+                    setSections={setDraftSections}
+                    questions={draftQuestions}
+                    setQuestions={setDraftQuestions}
                     deletedSections={deletedSections}
                     deletedQuestions={deletedQuestions}
                     readOnly={readOnly}
@@ -249,8 +280,8 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
                   }>
                     <EmbeddedOnboardingPanel
                       templateId={selected.id}
-                      questions={questions}
-                      sections={sections}
+                      questions={draftQuestions}
+                      sections={draftSections}
                       locationId={selected.location_id ?? undefined}
                       contactRole={selected.contact_role ?? undefined}
                       startingPhase={selected.starting_phase ?? undefined}
@@ -262,8 +293,10 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
               <SectionsTab
                 key={`${selected.id}-${sectionsVersion}`}
                 templateId={selected.id}
-                sections={sections}
-                questions={questions}
+                sections={draftSections}
+                setSections={setDraftSections}
+                questions={draftQuestions}
+                setQuestions={setDraftQuestions}
                 deletedSections={deletedSections}
                 deletedQuestions={deletedQuestions}
                 readOnly={readOnly}
@@ -276,8 +309,8 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
             <PhaseMatrixTab
               key={`${selected.id}-${sectionsVersion}`}
               templateId={selected.id}
-              sections={sections}
-              questions={questions}
+              sections={draftSections}
+              questions={draftQuestions}
               readOnly={readOnly}
             />
           )}

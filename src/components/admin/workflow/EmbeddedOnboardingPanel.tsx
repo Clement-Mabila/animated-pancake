@@ -7,7 +7,6 @@ import DynamicSection from '@/components/form/DynamicSection'
 import FleetSection from '@/components/form/sections/FleetSection'
 import ContactsSection from '@/components/form/sections/ContactsSection'
 import IntegrationsSection from '@/components/form/sections/IntegrationsSection'
-import DocumentsSection from '@/components/form/sections/DocumentsSection'
 import LocationPicker from './LocationPicker'
 import {
   PRIMARY_ROLES, ROLE_DEFINITIONS, ROLE_SUB_LOCATION_TIER,
@@ -806,12 +805,12 @@ export default function EmbeddedOnboardingPanel({
 
                   const child = (() => {
                     switch (sectionId) {
-                      case 'fleet':        return <FleetSection        {...dynProps} questions={sectionQs} locationId={configuration.location_id ?? undefined} />
+                      case 'fleet':        return <FleetSection        {...dynProps} questions={sectionQs} phase={phase} description={section.description ?? null} locationId={configuration.location_id ?? undefined} configurationId={configuration.id} />
                       case 'contacts':     return <ContactsSection     {...dynProps} questions={sectionQs} configurationId={configuration.id} />
                       case 'integrations': return <IntegrationsSection {...dynProps} questions={sectionQs} phase={phase} />
-                      case 'docs':         return <DocumentsSection    {...dynProps} questions={sectionQs} />
                       default:             return (
                         <DynamicSection
+                          key={sectionId}
                           sectionSlug={sectionId}
                           questions={sectionQs}
                           phase={phase}

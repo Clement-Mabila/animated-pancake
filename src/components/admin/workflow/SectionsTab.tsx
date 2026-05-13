@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from 'react'
 import type { ComponentType } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus, Pencil, Trash2, X, ChevronUp, ChevronDown, MoreHorizontal,
   AlignLeft, List, ToggleRight, Hash, Type, ListFilter, GripVertical, RotateCcw, Undo2,
-  CheckSquare, Users, CalendarClock, Blocks, UserCog,
+  CheckSquare, Users, CalendarClock, Blocks, UserCog, Bot, ListPlus, Files,
 } from 'lucide-react'
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor,
@@ -61,11 +61,14 @@ const FIELD_TYPE_CONFIG: Record<string, FieldCfg> = {
   multiselect: { color: '#0081FF', bg: 'rgba(0,129,255,0.15)',   icon: List        },
   boolean:     { color: '#22C55E', bg: 'rgba(34,197,94,0.15)',   icon: ToggleRight },
   number:      { color: '#F59E0B', bg: 'rgba(245,158,11,0.15)',  icon: Hash        },
+  multi_entry: { color: '#A52AE1', bg: 'rgba(165,42,225,0.12)',  icon: ListPlus    },
+  onboarding_document: { color: '#0D9488', bg: 'rgba(13,148,136,0.12)', icon: Files       },
   checkpoint:                { color: '#22C55E', bg: 'rgba(34,197,94,0.15)',    icon: CheckSquare   },
   orchestrator_user_selector:{ color: '#A52AE1', bg: 'rgba(165,42,225,0.15)',  icon: Users         },
   schedule_amend_selector:   { color: '#0081FF', bg: 'rgba(0,129,255,0.15)',   icon: CalendarClock },
   integration_block:         { color: '#E65100', bg: 'rgba(245,124,0,0.15)',   icon: Blocks        },
   contact_picker:            { color: '#7B1FA2', bg: 'rgba(123,31,162,0.15)',  icon: UserCog       },
+  fleet_robot_register:      { color: '#0081FF', bg: 'rgba(0,129,255,0.12)',   icon: Bot           },
 }
 
 const DEFAULT_FIELD_CFG: FieldCfg = {
@@ -368,7 +371,9 @@ function SortableQuestionCard({
 interface Props {
   templateId:        string
   sections:          WorkflowSection[]
+  setSections:       Dispatch<SetStateAction<WorkflowSection[]>>
   questions:         WorkflowQuestion[]
+  setQuestions:      Dispatch<SetStateAction<WorkflowQuestion[]>>
   deletedSections:   WorkflowSection[]
   deletedQuestions:  WorkflowQuestion[]
   readOnly:          boolean
@@ -376,12 +381,21 @@ interface Props {
   primaryQuestions?: WorkflowQuestion[]
 }
 
-export default function SectionsTab({ templateId, sections: initSections, questions: initQuestions, deletedSections, deletedQuestions, readOnly, primarySections = [], primaryQuestions = [] }: Props) {
+export default function SectionsTab({
+  templateId,
+  sections,
+  setSections,
+  questions,
+  setQuestions,
+  deletedSections,
+  deletedQuestions,
+  readOnly,
+  primarySections = [],
+  primaryQuestions = [],
+}: Props) {
   const router = useRouter()
 
-  const [sections,         setSections]         = useState<WorkflowSection[]>(initSections)
-  const [questions,        setQuestions]        = useState<WorkflowQuestion[]>(initQuestions)
-  const [selectedSlug,     setSelectedSlug]     = useState<string | null>(initSections[0]?.slug ?? null)
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(sections[0]?.slug ?? null)
   const [activePhase,      setActivePhase]      = useState<ConfigPhase | 'all'>('all')
   const [sectionModal,     setSectionModal]     = useState<{ open: boolean; section: WorkflowSection | null }>({ open: false, section: null })
   const [questionModal,    setQuestionModal]    = useState<{ open: boolean; question: WorkflowQuestion | null }>({ open: false, question: null })
@@ -415,6 +429,14 @@ export default function SectionsTab({ templateId, sections: initSections, questi
   type HistoryEntry = { undo: () => Promise<void>; redo: () => Promise<void> }
   const historyRef    = useRef<HistoryEntry[]>([])
   const historyPosRef = useRef(-1)
+
+  useEffect(() => {
+    setSelectedSlug(prev => {
+      if (sections.length === 0) return null
+      if (prev != null && sections.some(s => s.slug === prev)) return prev
+      return sections[0]!.slug
+    })
+  }, [sections])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

@@ -12,7 +12,6 @@ import IntegrationsSection from '@/components/form/sections/IntegrationsSection'
 import FSMSection from '@/components/form/sections/FSMSection'
 import InsightSection from '@/components/form/sections/InsightSection'
 import TimezoneSection from '@/components/form/sections/TimezoneSection'
-import DocumentsSection from '@/components/form/sections/DocumentsSection'
 import { adminSaveSectionAction } from '@/app/admin/actions/configurationAdmin'
 import { useToast } from '@/context/ToastContext'
 import type { ConfigurationWithStaff, ConfigSection, SectionId, WorkflowQuestion, ConfigPhase } from '@/types'
@@ -148,6 +147,9 @@ export default function AdminConfigEditor({
                   locationId={locationId}
                   industry={industry}
                   questions={questions.filter(q => q.section_slug === sectionId)}
+                  configurationId={configuration.id}
+                  phase={(configuration.phase as ConfigPhase) ?? 'pre_deploy'}
+                  description={null}
                 />
               )
             case 'contacts':
@@ -237,17 +239,26 @@ export default function AdminConfigEditor({
                   industry={industry}
                 />
               )
-            case 'docs':
+            case 'docs': {
+              const docsQs = questions.filter(q => q.section_slug === 'docs' && q.field_key !== '__all__')
               return (
-                <DocumentsSection
+                <DynamicSection
+                  key="docs"
+                  sectionSlug="docs"
+                  questions={docsQs}
+                  phase={(configuration.phase as ConfigPhase) ?? 'pre_deploy'}
+                  description={null}
                   data={sectionData?.data ?? {}}
                   onSave={(d, c) => persist(sectionId, d, c)}
                   onAutoSave={() => {}}
                   isSaving={saving}
                   isComplete={sectionData?.is_complete ?? false}
-                  questions={questions.filter(q => q.section_slug === sectionId)}
+                  industry={industry}
+                  configurationId={configuration.id}
+                  locationId={locationId}
                 />
               )
+            }
           }
         })()
 

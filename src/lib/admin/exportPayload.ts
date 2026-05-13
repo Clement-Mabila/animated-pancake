@@ -5,7 +5,7 @@ import type { ConfigPhase, SectionId } from '@/types'
 
 // Dynamic sections that use WorkflowQuestion-based rendering — the only ones
 // where dummy_value substitution is applicable.
-const DYNAMIC_SECTION_SLUGS = new Set(['roi', 'kpis', 'roles', 'fsm', 'insight', 'timezone', 'alerts'])
+const DYNAMIC_SECTION_SLUGS = new Set(['roi', 'kpis', 'roles', 'fsm', 'insight', 'timezone', 'alerts', 'docs', 'fleet'])
 
 export interface QuestionDefault {
   section_slug: string
