@@ -49,6 +49,7 @@ const STAFF_ROLE_MAP: Record<MBodyRole, string> = {
   engineering:      'Engineering',
   finance:          'Finance',
   customer_success: 'Customer Success',
+  admin:            'Admin',
 }
 
 /* ── Type badge ─────────────────────────────────────────────── */

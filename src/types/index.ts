@@ -7,6 +7,8 @@ export type MBodyRole =
   | 'engineering'
   | 'finance'
   | 'customer_success'
+  /** Internal / Orion Console staff identity for admin-led onboarding flows */
+  | 'admin'
 
 export type ConfigScope = 'location' | 'sub_location' | 'mbody_role' | 'user'
 
@@ -318,6 +320,8 @@ export interface AdminUser {
   created_at:        string
   approval_status:   AdminApprovalStatus
   skip_otp:          boolean
+  /** When present on `admin_users`, used to pre-fill onboarding role for init-token flows. */
+  mbody_role?:       MBodyRole | null
 }
 
 export interface AdminAuditEntry {

@@ -49,6 +49,7 @@ const MBODY_ROLES: { value: MBodyRole; label: string }[] = [
   { value: 'engineering',      label: 'Engineering'      },
   { value: 'finance',          label: 'Finance'          },
   { value: 'customer_success', label: 'Customer Success' },
+  { value: 'admin',            label: 'Admin'            },
 ]
 
 const CONFIG_TARGETS: { value: ConfigTarget; label: string; desc: string }[] = [
@@ -236,13 +237,20 @@ function SubLocationBuilder({
 
 // ── Main component ────────────────────────────────────────────
 
+function initialStaffRoleFromPrefill(prefillIdentity: SessionSelectorProps['prefillIdentity']): MBodyRole | '' {
+  if (prefillIdentity?.role) return prefillIdentity.role
+  // Admin init-token path: staff_users row is often missing; use a safe default for onboarding identity only.
+  if (prefillIdentity?.fromAdminInitToken) return 'admin'
+  return ''
+}
+
 export default function SessionSelector({ onStart, onResume, loading, prefillIdentity }: SessionSelectorProps) {
-  // When all three identity fields come pre-filled from a validated admin token,
-  // skip step 1 entirely and open directly at step 2.
+  // When identity is complete from a validated admin token, skip step 1 and open at step 2.
+  // `fromAdminInitToken` may omit DB-resolved `role`; we still default staff role server-side in initial state.
   const isFullyPrefilled = !!(
     prefillIdentity?.email &&
-    prefillIdentity?.name  &&
-    prefillIdentity?.role
+    prefillIdentity?.name &&
+    (prefillIdentity?.role || prefillIdentity?.fromAdminInitToken)
   )
 
   const [step, setStep] = useState<1 | 2 | 3>(isFullyPrefilled ? 2 : 1)
@@ -250,7 +258,7 @@ export default function SessionSelector({ onStart, onResume, loading, prefillIde
   // ── Step 1 — identity (initialised from admin token when present)
   const [fullName, setFullName] = useState(prefillIdentity?.name  ?? '')
   const [email,    setEmail]    = useState(prefillIdentity?.email ?? '')
-  const [role,     setRole]     = useState<MBodyRole | ''>(prefillIdentity?.role ?? '')
+  const [role,     setRole]     = useState<MBodyRole | ''>(() => initialStaffRoleFromPrefill(prefillIdentity))
 
   // ── Step 2 — target
   const [target, setTarget] = useState<ConfigTarget | ''>('')
@@ -535,6 +543,7 @@ export default function SessionSelector({ onStart, onResume, loading, prefillIde
                   )}
                 </div>
               </div>
+              {!prefillIdentity?.fromAdminInitToken && (
               <div>
                 <label className={labelClass}>Your role at MBody AI</label>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -553,6 +562,7 @@ export default function SessionSelector({ onStart, onResume, loading, prefillIde
                   ))}
                 </div>
               </div>
+              )}
               {step1Done && (
                 <div className="flex justify-end">
                   <button onClick={() => setStep(2)}

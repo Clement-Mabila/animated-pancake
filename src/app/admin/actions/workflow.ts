@@ -226,6 +226,25 @@ export async function updateTemplateMetadataAction(templateId: string, raw: unkn
   return { ok: true }
 }
 
+/** Patch only `sub_location_group` (Live Preview / AI parity) without full metadata payload. */
+export async function updateTemplateSubLocationGroupAction(
+  templateId: string,
+  subLocationGroup: string[] | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdminSession()
+  const db = createAdminClient()
+  const { error } = await db
+    .from('workflow_templates')
+    .update({
+      sub_location_group: subLocationGroup && subLocationGroup.length > 0 ? subLocationGroup : null,
+      updated_at:         new Date().toISOString(),
+    })
+    .eq('id', templateId)
+  if (error) return { ok: false, error: error.message }
+  REVALIDATE()
+  return { ok: true }
+}
+
 // ── Sections ─────────────────────────────────────────────────
 
 const sectionSchema = z.object({

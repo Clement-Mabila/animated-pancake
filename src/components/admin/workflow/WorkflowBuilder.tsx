@@ -284,6 +284,7 @@ export default function WorkflowBuilder({ templates, allSections, allQuestions, 
                       sections={draftSections}
                       locationId={selected.location_id ?? undefined}
                       contactRole={selected.contact_role ?? undefined}
+                      subLocationGroup={selected.sub_location_group ?? undefined}
                       startingPhase={selected.starting_phase ?? undefined}
                     />
                   </Suspense>

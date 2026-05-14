@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { CheckCircle2, Circle, Clock, Lock, CirclePlus, ArrowRight, Info, Check, ChevronUp, ChevronDown } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
 import DynamicSection from '@/components/form/DynamicSection'
@@ -15,7 +16,7 @@ import {
   getPhaseDisplayStatus, getNextPhase, getPreviousPhase,
 } from '@/lib/phases'
 import { getConfigurationsForTemplate, getSubLocations, getClientContactsForLocation } from '@/lib/supabase/queries'
-import { startOnboardingForTemplateAction } from '@/app/admin/actions/workflow'
+import { startOnboardingForTemplateAction, updateTemplateSubLocationGroupAction } from '@/app/admin/actions/workflow'
 import type {
   WorkflowQuestion, WorkflowSection,
   ConfigPhase, SectionId, StaffIdentity, ContactRoleLabel,
@@ -30,15 +31,72 @@ const inputClass =
 const labelClass =
   'block text-sm font-medium text-muted mb-1.5'
 
+/** Same semantics as AI Builder: multi-select persists to `workflow_templates.sub_location_group`. */
+function TemplateSubLocationGroupCheckboxes({
+  templateId,
+  subLocations,
+  subLocationGroup,
+}: {
+  templateId:         string
+  subLocations:       { id: string; name: string }[]
+  subLocationGroup?: string[] | null
+}) {
+  const router = useRouter()
+  const groupKey = JSON.stringify(subLocationGroup ?? [])
+  const [managed, setManaged] = useState<string[]>(() =>
+    subLocationGroup?.length ? [...subLocationGroup] : [],
+  )
+
+  useEffect(() => {
+    setManaged(subLocationGroup?.length ? [...subLocationGroup] : [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateId, groupKey])
+
+  async function toggle(slId: string, checked: boolean) {
+    const next = checked ? [...managed, slId] : managed.filter(x => x !== slId)
+    setManaged(next)
+    const res = await updateTemplateSubLocationGroupAction(templateId, next.length ? next : null)
+    if (res.ok) router.refresh()
+  }
+
+  return (
+    <div>
+      <label className={labelClass}>
+        Sub-locations this role covers{' '}
+        <span className="font-normal text-muted">(all = leave unchecked)</span>
+      </label>
+      <div className="flex flex-col gap-1">
+        {subLocations.map(sl => (
+          <label key={sl.id} className="flex items-center gap-2 cursor-pointer py-0.5">
+            <input
+              type="checkbox"
+              checked={managed.includes(sl.id)}
+              onChange={e => { void toggle(sl.id, e.target.checked) }}
+              className="w-3.5 h-3.5"
+              style={{ accentColor: '#928CE3' }}
+            />
+            <span className="text-xs text-body-text">{sl.name}</span>
+          </label>
+        ))}
+      </div>
+      <p className="text-xs text-muted mt-1.5">
+        Same as AI Builder — leave all unchecked to cover the whole location.
+      </p>
+    </div>
+  )
+}
+
 // ── Types ─────────────────────────────────────────────────────
 
 interface Props {
-  templateId:     string
-  questions:      WorkflowQuestion[]
-  sections:       WorkflowSection[]
-  locationId?:    string
-  contactRole?:   string
-  startingPhase?: ConfigPhase | null
+  templateId:         string
+  questions:          WorkflowQuestion[]
+  sections:           WorkflowSection[]
+  locationId?:        string
+  contactRole?:       string
+  /** Template-bound allowed sub-location IDs (UUIDs); filters preview pickers. */
+  subLocationGroup?:  string[] | null
+  startingPhase?:     ConfigPhase | null
 }
 
 // ── Sub-component: phase selector (shared) ────────────────────
@@ -156,15 +214,16 @@ function MiniPhaseTimeline({ config }: { config: ConfigurationWithRelations }) {
 // buttons per contact. New-contact form only shown when none exist.
 
 interface BoundStartScreenProps {
-  templateId:    string
-  locationId:    string
-  contactRole:   ContactRoleLabel
-  startingPhase: ConfigPhase
+  templateId:         string
+  locationId:         string
+  contactRole:        ContactRoleLabel
+  startingPhase:      ConfigPhase
+  subLocationGroup?:  string[] | null
   onStart:  (identity: StaffIdentity, locationId: string, role: ContactRoleLabel, phase: ConfigPhase, subLocationId?: string) => void
   onResume: (configId: string) => void
 }
 
-function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, onStart, onResume }: BoundStartScreenProps) {
+function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, subLocationGroup, onStart, onResume }: BoundStartScreenProps) {
   const [contacts,     setContacts]     = useState<ClientContact[]>([])
   const [configs,      setConfigs]      = useState<ConfigurationWithRelations[]>([])
   const [fetchDone,    setFetchDone]    = useState(false)
@@ -194,13 +253,22 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
   }, [])
 
   useEffect(() => {
-    if (needsSubLoc) {
-      getSubLocations(locationId).then(subs =>
-        setSubLocations(subs.map(s => ({ id: s.id, name: s.name })))
-      )
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [needsSubLoc, locationId])
+    getSubLocations(locationId).then(subs =>
+      setSubLocations(subs.map(s => ({ id: s.id, name: s.name })))
+    )
+  }, [locationId])
+
+  const filteredSubs = useMemo(() => {
+    if (!subLocationGroup?.length) return subLocations
+    const allow = new Set(subLocationGroup)
+    return subLocations.filter(s => allow.has(s.id))
+  }, [subLocations, subLocationGroup])
+
+  useEffect(() => {
+    if (!needsSubLoc) return
+    if (filteredSubs.length !== 1) return
+    setSubLocId(prev => (prev ? prev : filteredSubs[0]!.id))
+  }, [needsSubLoc, filteredSubs])
 
   function configForContact(contact: ClientContact): ConfigurationWithRelations | null {
     return configs.find(c =>
@@ -222,16 +290,21 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
     }
   }
 
-  const isNewFormValid = fullName.trim() && email.trim() && (!needsSubLoc || subLocId)
+  const subPickInvalid =
+    needsSubLoc && (!subLocId || filteredSubs.length === 0)
+
+  const isNewFormValid =
+    fullName.trim() && email.trim() && !subPickInvalid
 
   function handleStartNew() {
     if (!isNewFormValid) return
+    const subOut = needsSubLoc ? (subLocId || undefined) : undefined
     onStart(
       { fullName: fullName.trim(), email: email.trim(), role: 'account_manager' },
       locationId,
       contactRole,
       phase,
-      needsSubLoc ? subLocId || undefined : undefined,
+      subOut,
     )
   }
 
@@ -243,6 +316,14 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
 
   return (
     <div className="flex flex-col gap-3 p-4">
+
+      {!needsSubLoc && subLocations.length > 0 && (
+        <TemplateSubLocationGroupCheckboxes
+          templateId={templateId}
+          subLocations={subLocations}
+          subLocationGroup={subLocationGroup}
+        />
+      )}
 
       {/* ── Existing contacts ── */}
       {contacts.length > 0 && (
@@ -404,13 +485,23 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
             </span>
           </div>
 
-          {needsSubLoc && subLocations.length > 0 && (
+          {needsSubLoc && (
             <div>
               <label className={labelClass}>Sub-location *</label>
-              <select value={subLocId} onChange={e => setSubLocId(e.target.value)} className={inputClass}>
-                <option value="">Select sub-location…</option>
-                {subLocations.map(sl => <option key={sl.id} value={sl.id}>{sl.name}</option>)}
-              </select>
+              {filteredSubs.length === 0 ? (
+                <p className="text-xs text-muted">
+                  {subLocationGroup?.length
+                    ? 'No sub-locations at this site match the template sub-location group.'
+                    : 'No sub-locations found for this site.'}
+                </p>
+              ) : (
+                <select value={subLocId} onChange={e => setSubLocId(e.target.value)} className={inputClass}>
+                  <option value="">Select sub-location…</option>
+                  {filteredSubs.map(sl => (
+                    <option key={sl.id} value={sl.id}>{sl.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
 
@@ -453,18 +544,55 @@ function BoundStartScreen({ templateId, locationId, contactRole, startingPhase, 
 // Shown when template has no locationId/contactRole — full form.
 
 interface StartFormProps {
-  locationId?: string
+  templateId:         string
+  locationId?:        string
+  subLocationGroup?:  string[] | null
   onStart: (identity: StaffIdentity, locationId: string, contactRole: ContactRoleLabel, phase: ConfigPhase, subLocationId?: string) => void
 }
 
-function SessionStartForm({ locationId: presetLocationId, onStart }: StartFormProps) {
+function SessionStartForm({ templateId, locationId: presetLocationId, subLocationGroup, onStart }: StartFormProps) {
   const [fullName,      setFullName]      = useState('')
   const [email,         setEmail]         = useState('')
   const [resolvedLocId, setResolvedLocId] = useState(presetLocationId ?? '')
   const [contactRole,   setContactRole]   = useState<ContactRoleLabel | ''>('')
   const [phase,         setPhase]         = useState<ConfigPhase>('early')
+  const [subLocations,  setSubLocations]  = useState<{ id: string; name: string }[]>([])
+  const [subLocId,      setSubLocId]      = useState('')
 
-  const isValid = fullName.trim() && email.trim() && resolvedLocId && contactRole
+  useEffect(() => {
+    if (!resolvedLocId) {
+      setSubLocations([])
+      setSubLocId('')
+      return
+    }
+    getSubLocations(resolvedLocId).then(subs =>
+      setSubLocations(subs.map(s => ({ id: s.id, name: s.name })))
+    )
+    setSubLocId('')
+  }, [resolvedLocId])
+
+  const filteredSubs = useMemo(() => {
+    if (!subLocationGroup?.length) return subLocations
+    const allow = new Set(subLocationGroup)
+    return subLocations.filter(s => allow.has(s.id))
+  }, [subLocations, subLocationGroup])
+
+  const tier = contactRole ? ROLE_SUB_LOCATION_TIER[contactRole] : null
+  const needsSubLoc = tier === 'single_sub'
+
+  useEffect(() => {
+    if (!needsSubLoc || filteredSubs.length !== 1) return
+    setSubLocId(prev => (prev ? prev : filteredSubs[0]!.id))
+  }, [needsSubLoc, filteredSubs])
+
+  const showSingleSubPicker = !!(resolvedLocId && needsSubLoc && filteredSubs.length > 0)
+
+  const isValid =
+    fullName.trim() &&
+    email.trim() &&
+    resolvedLocId &&
+    contactRole &&
+    (!needsSubLoc || !!subLocId)
 
   function handleStart() {
     if (!isValid || !contactRole) return
@@ -473,6 +601,7 @@ function SessionStartForm({ locationId: presetLocationId, onStart }: StartFormPr
       resolvedLocId,
       contactRole as ContactRoleLabel,
       phase,
+      subLocId || undefined,
     )
   }
 
@@ -504,6 +633,12 @@ function SessionStartForm({ locationId: presetLocationId, onStart }: StartFormPr
           <label className={labelClass}>Location *</label>
           <LocationPicker onLocationSet={locId => setResolvedLocId(locId)} />
         </div>
+      )}
+
+      {resolvedLocId && subLocations.length > 0 && filteredSubs.length === 0 && !!(subLocationGroup?.length) && (
+        <p className="text-xs text-warning">
+          No sub-locations at this site match the template sub-location group.
+        </p>
       )}
 
       <div>
@@ -544,6 +679,30 @@ function SessionStartForm({ locationId: presetLocationId, onStart }: StartFormPr
         </div>
       </div>
 
+      {contactRole && subLocations.length > 0 && !needsSubLoc && (
+        <TemplateSubLocationGroupCheckboxes
+          templateId={templateId}
+          subLocations={subLocations}
+          subLocationGroup={subLocationGroup}
+        />
+      )}
+
+      {showSingleSubPicker && (
+        <div>
+          <label className={labelClass}>Sub-location *</label>
+          <select
+            value={subLocId}
+            onChange={e => setSubLocId(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">Select sub-location…</option>
+            {filteredSubs.map(sl => (
+              <option key={sl.id} value={sl.id}>{sl.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div>
         <label className={labelClass}>Starting phase</label>
         <PhaseSelector value={phase} onChange={setPhase} />
@@ -576,6 +735,7 @@ export default function EmbeddedOnboardingPanel({
   sections,
   locationId,
   contactRole,
+  subLocationGroup,
   startingPhase,
 }: Props) {
   const [openSectionId,       setOpenSectionId]       = useState<string | null>(null)
@@ -717,12 +877,15 @@ export default function EmbeddedOnboardingPanel({
               locationId={locationId!}
               contactRole={contactRole as ContactRoleLabel}
               startingPhase={startingPhase ?? 'early'}
+              subLocationGroup={subLocationGroup}
               onStart={handleStart}
               onResume={resumeConfiguration}
             />
           ) : (
             <SessionStartForm
+              templateId={templateId}
               locationId={locationId}
+              subLocationGroup={subLocationGroup}
               onStart={handleStart}
             />
           )
